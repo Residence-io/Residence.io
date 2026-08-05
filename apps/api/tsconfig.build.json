@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "prisma/seed.ts",
+    "prisma/demo-seed.ts",
+    "prisma/demo-seed-safety.ts",
+    "prisma/supabase-auth-import.ts",
+    "prisma.config.ts"
+  ]
+}
+

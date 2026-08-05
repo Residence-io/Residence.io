@@ -1,0 +1,77 @@
+{
+  "sourceOfTruth": "supabase/migrations",
+  "historicalSource": "apps/api/prisma/migrations",
+  "authorityEffectivePhase": "S1",
+  "historicalMigrations": [
+    {
+      "version": "20260714170000",
+      "name": "phase_1_foundation",
+      "source": "apps/api/prisma/migrations/20260714170000_phase_1_foundation/migration.sql",
+      "target": "supabase/migrations/20260714170000_phase_1_foundation.sql",
+      "sha256": "d7adc9e28e516bf9ce14b1609aad1c21a3cab9386604802d601ecd5a5d95e4c9"
+    },
+    {
+      "version": "20260714210000",
+      "name": "phase_2_resident_management",
+      "source": "apps/api/prisma/migrations/20260714210000_phase_2_resident_management/migration.sql",
+      "target": "supabase/migrations/20260714210000_phase_2_resident_management.sql",
+      "sha256": "ebe89238804755a88fed112634a250bdbe96290eb777d9268a3f0819143b17a3"
+    },
+    {
+      "version": "20260714230000",
+      "name": "phase_3_dues_payments",
+      "source": "apps/api/prisma/migrations/20260714230000_phase_3_dues_payments/migration.sql",
+      "target": "supabase/migrations/20260714230000_phase_3_dues_payments.sql",
+      "sha256": "f865475032f2c1c4cfc8285e8f13cebb0a63bd0dbccd988e993d7352436e6b1b"
+    },
+    {
+      "version": "20260716120000",
+      "name": "phase_4_staff_workers",
+      "source": "apps/api/prisma/migrations/20260716120000_phase_4_staff_workers/migration.sql",
+      "target": "supabase/migrations/20260716120000_phase_4_staff_workers.sql",
+      "sha256": "fe89cb71313fb4c671dcbcd450e3064fad2cae93f522b8bc7d17906c04b1aee2"
+    },
+    {
+      "version": "20260717120000",
+      "name": "phase_5_complaints_maintenance",
+      "source": "apps/api/prisma/migrations/20260717120000_phase_5_complaints_maintenance/migration.sql",
+      "target": "supabase/migrations/20260717120000_phase_5_complaints_maintenance.sql",
+      "sha256": "d8958ac5dab9dec37a2fb8411157ae78e500f3fd0727069f9399181e467b9e0b"
+    },
+    {
+      "version": "20260718120000",
+      "name": "phase_6_notifications",
+      "source": "apps/api/prisma/migrations/20260718120000_phase_6_notifications/migration.sql",
+      "target": "supabase/migrations/20260718120000_phase_6_notifications.sql",
+      "sha256": "67ddd32e31376d9e8fa0a93601c9135285ffe05d458a0910440948c0c8b953ff"
+    },
+    {
+      "version": "20260720120000",
+      "name": "phase_7_settings_reports",
+      "source": "apps/api/prisma/migrations/20260720120000_phase_7_settings_reports/migration.sql",
+      "target": "supabase/migrations/20260720120000_phase_7_settings_reports.sql",
+      "sha256": "17305094d9645b3a2843d356986728a066d89bc377e7582337a5fa88f20e21ea"
+    },
+    {
+      "version": "20260728190000",
+      "name": "resident_registration_simplification",
+      "source": "apps/api/prisma/migrations/20260728190000_resident_registration_simplification/migration.sql",
+      "target": "supabase/migrations/20260728190000_resident_registration_simplification.sql",
+      "sha256": "33e6b62d827d6eed822d44de665480591b8b1292d7adf803f97836ccaa57d77a"
+    },
+    {
+      "version": "20260728200000",
+      "name": "resident_profile_photo_integrity",
+      "source": "apps/api/prisma/migrations/20260728200000_resident_profile_photo_integrity/migration.sql",
+      "target": "supabase/migrations/20260728200000_resident_profile_photo_integrity.sql",
+      "sha256": "f6d39ecbd6ac017cc9fe16816bff55a7585fdf8e62e93e6c517bc5c553a4ef30"
+    },
+    {
+      "version": "20260730200000",
+      "name": "allow_resident_cnic_multiple_properties",
+      "source": "apps/api/prisma/migrations/20260730200000_allow_resident_cnic_multiple_properties/migration.sql",
+      "target": "supabase/migrations/20260730200000_allow_resident_cnic_multiple_properties.sql",
+      "sha256": "fa1c1ac4995eef062beed45ef0273410626273ad762c3b4219f8759a39929136"
+    }
+  ]
+}

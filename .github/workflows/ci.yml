@@ -1,0 +1,42 @@
+name: Continuous integration
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    env:
+      NODE_ENV: test
+      WEB_ORIGIN: http://localhost:3000
+      PUBLIC_WEB_URL: http://localhost:3000
+      SESSION_COOKIE_SECURE: 'false'
+      NOTIFICATION_PROVIDER_MODE: disabled
+      PAYMENT_PROVIDER_MODE: disabled
+      PRIVATE_STORAGE_ROOT: var/private-ci
+      RUN_DATABASE_TESTS: 'true'
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm install --global npm@11.9.0
+      - name: Create ephemeral test secrets
+        run: |
+          node -e "const {randomBytes}=require('node:crypto'); for (const n of ['SESSION_SECRET','IDENTITY_DATA_KEY','RESIDENCE_SEED_PASSWORD']) console.log(n+'='+randomBytes(36).toString('base64url'))" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run security:audit
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run security:scan

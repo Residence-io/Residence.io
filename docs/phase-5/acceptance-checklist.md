@@ -1,0 +1,21 @@
+# Phase 5 acceptance checklist
+
+- [x] Complaint and maintenance aggregates and workflows remain distinct.
+- [x] Residents submit, list, open, message, close/reopen, and rate only their own eligible tickets.
+- [x] Ticket numbers use society-scoped atomic PostgreSQL sequences and unique constraints.
+- [x] Confidential complaints, internal notes, sensitive attachments, and exports enforce privacy.
+- [x] Explicit transition policy and optimistic versions reject invalid or stale changes.
+- [x] Administrator triage, priority, ownership, responses, assignment, resolution, and closure APIs exist.
+- [x] Phase 4 category, skill, status, time, leave, service-area, and reservation eligibility is reused.
+- [x] Assignment/reassignment and appointment/rescheduling histories are preserved.
+- [x] PostgreSQL exclusion constraints prevent overlapping active appointments and reservations.
+- [x] Confirmed scheduling uses minimal, consent-based, audited contact disclosure.
+- [x] Role-safe timelines, messages, private attachments, and downloads are implemented.
+- [x] Resolution, resident confirmation, reopening window, and verified resident ratings are implemented.
+- [x] SLA targets and idempotent escalation records/outbox events are implemented.
+- [x] Administration and resident dashboards use database-derived values.
+- [x] Permission-controlled bounded exports respect owner and privacy rules.
+- [x] Audit and Phase 6 outbox events cover sensitive workflow actions.
+- [x] Phase 1-4 code and migrations are preserved.
+- [ ] Live PostgreSQL migration/concurrency execution: blocked when Docker/PostgreSQL is unavailable.
+- [x] Phase 6 notification delivery was not started.

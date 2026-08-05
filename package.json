@@ -1,0 +1,63 @@
+{
+  "name": "residence-io",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=22.12.0 <25",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "prisma:validate": "npm run prisma:validate --workspace api",
+    "prisma:format:check": "npm run prisma:format:check --workspace api",
+    "prisma:generate": "npm run prisma:generate --workspace api",
+    "db:migrate": "npm run db:migrate --workspace api",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace api",
+    "db:reset": "npm run db:reset --workspace api",
+    "db:seed": "npm run db:seed --workspace api",
+    "db:seed:demo": "npm run db:seed:demo --workspace api",
+    "supabase:version": "supabase --version",
+    "supabase:start": "node scripts/supabase-start.mjs",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:migrations": "supabase migration list --local",
+    "supabase:types": "node scripts/supabase-types.mjs",
+    "supabase:verify": "node scripts/supabase-verify.mjs",
+    "supabase:check": "npm run supabase:migrations && npm run supabase:types && npm run supabase:verify",
+    "test:e2e": "npm run test:e2e --workspace api",
+    "security:scan": "node scripts/secret-scan.mjs",
+    "security:audit": "npm audit --audit-level=critical",
+    "smoke": "node scripts/smoke.mjs",
+    "verify": "npm run prisma:format:check && npm run prisma:validate && npm run prisma:generate && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run security:scan"
+  },
+  "devDependencies": {
+    "@types/hoist-non-react-statics": "3.3.7",
+    "@types/webidl-conversions": "7.0.3",
+    "@types/whatwg-url": "13.0.0",
+    "prettier": "^3.6.2",
+    "supabase": "2.111.0",
+    "turbo": "^2.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "allowScripts": {
+    "@prisma/engines@7.8.0": true,
+    "@scarf/scarf@1.4.0": true,
+    "argon2@0.44.0": true,
+    "esbuild@0.28.1": true,
+    "prisma@7.8.0": true,
+    "protobufjs@7.6.5": true,
+    "sharp@0.34.5": true,
+    "ssh2@1.17.0": true,
+    "unrs-resolver@1.12.2": true
+  }
+}

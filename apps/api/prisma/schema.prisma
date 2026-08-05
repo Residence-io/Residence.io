@@ -1,0 +1,2693 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider   = "postgresql"
+}
+
+
+enum SocietyStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum AccountStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  ARCHIVED
+}
+
+enum AuthMigrationState {
+  PENDING
+  IMPORTED
+  RESET_REQUIRED
+  VERIFIED
+  FAILED
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+  DENIED
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum ResidentStatus {
+  ACTIVE
+  SUSPENDED
+  MOVED_OUT
+  INACTIVE
+  ARCHIVED
+}
+
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  PLOT
+  COMMERCIAL
+  OTHER
+}
+
+enum UnitStatus {
+  AVAILABLE
+  OCCUPIED
+  INACTIVE
+  ARCHIVED
+}
+
+enum OccupancyType {
+  OWNER
+  TENANT
+}
+
+enum HouseholdMemberStatus {
+  ACTIVE
+  MOVED_OUT
+  INACTIVE
+}
+
+enum ResidentDocumentCategory {
+  PROFILE_PHOTOGRAPH
+  IDENTITY_DOCUMENT
+  OWNERSHIP_DOCUMENT
+  TENANCY_AGREEMENT
+  OTHER
+}
+
+enum ResidentDocumentStatus {
+  ACTIVE
+  REPLACED
+  ARCHIVED
+}
+
+enum ResidentIDCardStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum FeePlanScope {
+  SOCIETY_DEFAULT
+  PROPERTY_TYPE
+  UNIT
+}
+
+enum LateFeeType {
+  NONE
+  FIXED
+  PERCENTAGE
+}
+
+enum DueStatus {
+  UPCOMING
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WAIVED
+  CANCELLED
+  UNDER_REVIEW
+}
+
+enum DueLineItemType {
+  PRINCIPAL
+  LATE_FEE
+  DEBIT_ADJUSTMENT
+  DISCOUNT
+  WAIVER
+}
+
+enum LedgerDirection {
+  DEBIT
+  CREDIT
+}
+
+enum LedgerEntryType {
+  OPENING_BALANCE
+  MONTHLY_DUE
+  LATE_FEE
+  PAYMENT
+  DISCOUNT
+  WAIVER
+  DEBIT_ADJUSTMENT
+  CREDIT_ADJUSTMENT
+  REVERSAL
+  REFUND
+  ADVANCE_CREDIT
+  ADVANCE_APPLIED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD_PROVIDER
+  DIGITAL_WALLET
+  CHEQUE
+  OTHER
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING_VERIFICATION
+  CONFIRMED
+  FAILED
+  CANCELLED
+  REVERSED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum AllocationStrategy {
+  OLDEST_DUE_FIRST
+  SELECTED_DUES
+  CURRENT_MONTH
+  ALL_OUTSTANDING
+  ADVANCE
+}
+
+enum FinancialBatchStatus {
+  PREVIEWED
+  PROCESSING
+  COMPLETED
+  PARTIALLY_COMPLETED
+  FAILED
+}
+
+enum AdjustmentType {
+  FIXED_DISCOUNT
+  PERCENTAGE_DISCOUNT
+  PARTIAL_WAIVER
+  FULL_WAIVER
+  DEBIT_ADJUSTMENT
+  CREDIT_ADJUSTMENT
+  CORRECTION
+}
+
+enum ReceiptStatus {
+  ACTIVE
+  REVERSED
+}
+
+enum ProviderTransactionStatus {
+  CREATED
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum RefundStatus {
+  CONFIRMED
+  FAILED
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  PART_TIME
+  TEMPORARY
+  DAILY_WAGE
+  OTHER
+}
+
+enum StaffStatus {
+  ACTIVE
+  PROBATION
+  ON_LEAVE
+  SUSPENDED
+  RESIGNED
+  TERMINATED
+  RETIRED
+  ARCHIVED
+}
+
+enum SalaryFrequency {
+  MONTHLY
+  WEEKLY
+  DAILY
+}
+
+enum SalaryRecordStatus {
+  DRAFT
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  ON_HOLD
+  CANCELLED
+  REVERSED
+}
+
+enum SalaryPaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  DIGITAL_TRANSFER
+  OTHER
+}
+
+enum SalaryAdjustmentType {
+  ALLOWANCE
+  DEDUCTION
+  DEBIT_CORRECTION
+  CREDIT_CORRECTION
+}
+
+enum SalaryPaymentStatus {
+  CONFIRMED
+  REVERSED
+  PARTIALLY_REVERSED
+}
+
+enum SalarySlipStatus {
+  ACTIVE
+  REVERSED
+}
+
+enum WorkerRelationship {
+  INTERNAL
+  EXTERNAL_CONTRACTOR
+}
+
+enum WorkerStatus {
+  AVAILABLE
+  BUSY
+  OFF_DUTY
+  ON_LEAVE
+  SUSPENDED
+  INACTIVE
+  ARCHIVED
+}
+
+enum WorkforceDocumentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AvailabilityOverrideType {
+  AVAILABLE
+  UNAVAILABLE
+  LEAVE
+}
+
+enum ScheduleReservationStatus {
+  RESERVED
+  CANCELLED
+  COMPLETED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  EMERGENCY
+}
+
+enum ComplaintPrivacy {
+  STANDARD
+  RESTRICTED
+  CONFIDENTIAL
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ASSIGNED
+  IN_PROGRESS
+  WAITING_FOR_RESIDENT
+  RESOLVED
+  REJECTED
+  CLOSED
+  REOPENED
+}
+
+enum MaintenanceStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  ASSIGNED
+  VISIT_SCHEDULED
+  WORK_IN_PROGRESS
+  AWAITING_PARTS
+  WAITING_FOR_RESIDENT
+  COMPLETED
+  CANCELLED
+  REJECTED
+  REOPENED
+  CLOSED
+}
+
+enum TicketMessageVisibility {
+  RESIDENT_VISIBLE
+  INTERNAL
+  WORKER_OPERATIONAL
+}
+
+enum TicketAttachmentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum WorkerAssignmentStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+enum AppointmentStatus {
+  PROPOSED
+  CONFIRMED
+  RESCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  MISSED
+}
+
+enum TicketType {
+  COMPLAINT
+  MAINTENANCE
+}
+
+enum EscalationKind {
+  RESPONSE_DUE
+  RESPONSE_OVERDUE
+  RESOLUTION_DUE
+  RESOLUTION_OVERDUE
+}
+
+enum NotificationStatus {
+  DRAFT
+  SCHEDULED
+  PROCESSING
+  PARTIALLY_SENT
+  SENT
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum DeliveryStatus {
+  QUEUED
+  PROCESSING
+  ACCEPTED
+  DELIVERED
+  FAILED
+  RETRYING
+  SKIPPED
+  CANCELLED
+  EXPIRED
+}
+
+enum RecipientReadStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  EMERGENCY
+}
+
+enum FailureClassification {
+  TEMPORARY
+  PERMANENT
+  INVALID_RECIPIENT
+  PROVIDER_DISABLED
+  UNKNOWN
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  EXPIRED
+  CANCELLED
+}
+
+enum AudienceType {
+  ALL_RESIDENTS
+  SELECTED_RESIDENTS
+  SELECTED_BLOCKS
+  SELECTED_UNITS
+  OWNERS
+  TENANTS
+  STAFF
+  WORKERS
+  ADMINISTRATORS
+  CUSTOM
+}
+
+enum JobClaimStatus {
+  CLAIMED
+  COMPLETED
+  FAILED
+}
+
+enum ProfileCorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model Society {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug       String        @unique @db.VarChar(80)
+  name       String        @db.VarChar(160)
+  timeZone   String        @default("Asia/Karachi") @map("time_zone") @db.VarChar(80)
+  currency   String        @default("PKR") @db.Char(3)
+  status     SocietyStatus @default(ACTIVE)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt DateTime?     @map("archived_at") @db.Timestamptz(6)
+  version    Int           @default(0)
+
+  users                   UserAccount[]
+  roles                   Role[]
+  userRoles               UserRole[]
+  sessions                UserSession[]
+  settings                SystemSetting[]
+  audits                  AuditLog[]
+  residents               Resident[]
+  vehicles                Vehicle[]
+  properties              Property[]
+  residentSequences       ResidentIDSequence[]
+  feePlans                FeePlan[]
+  billingPeriods          BillingPeriod[]
+  monthlyDues             MonthlyDue[]
+  payments                Payment[]
+  ledgerEntries           FinancialLedgerEntry[]
+  financialBatches        FinancialBatch[]
+  receiptSequences        ReceiptSequence[]
+  departments             Department[]
+  jobTitles               JobTitle[]
+  staffMembers            StaffMember[]
+  salaryPeriods           SalaryPeriod[]
+  staffSequences          StaffIDSequence[]
+  workerCategories        WorkerCategory[]
+  workerSkills            WorkerSkill[]
+  serviceWorkers          ServiceWorker[]
+  contractorCompanies     ContractorCompany[]
+  workerSequences         WorkerIDSequence[]
+  salarySlipSequences     SalarySlipSequence[]
+  complaintCategories     ComplaintCategory[]
+  maintenanceCategories   MaintenanceCategory[]
+  complaints              Complaint[]
+  maintenanceRequests     MaintenanceRequest[]
+  ticketSequences         TicketSequence[]
+  serviceLevelPolicies    ServiceLevelPolicy[]
+  notificationTemplates   NotificationTemplate[]
+  notificationBatches     NotificationBatch[]
+  notifications           Notification[]
+  announcements           Announcement[]
+  notificationPreferences NotificationPreference[]
+  financialSettings       FinancialSettingPeriod[]
+  profileCorrections      ProfileCorrectionRequest[]
+
+  @@index([status])
+  @@map("society")
+}
+
+model UserAccount {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId           String        @map("society_id") @db.Uuid
+  username            String        @db.VarChar(100)
+  normalizedUsername  String        @unique @map("normalized_username") @db.VarChar(100)
+  email               String?       @db.VarChar(254)
+  normalizedEmail     String?       @unique @map("normalized_email") @db.VarChar(254)
+  displayName         String        @map("display_name") @db.VarChar(160)
+  passwordHash        String        @map("password_hash") @db.VarChar(255)
+  status              AccountStatus @default(INVITED)
+  forcePasswordChange Boolean       @default(true) @map("force_password_change")
+  emailVerified       Boolean       @default(false) @map("email_verified")
+  failedLoginCount    Int           @default(0) @map("failed_login_count")
+  lockedUntil         DateTime?     @map("locked_until") @db.Timestamptz(6)
+  lastLoginAt         DateTime?     @map("last_login_at") @db.Timestamptz(6)
+  passwordChangedAt   DateTime?     @map("password_changed_at") @db.Timestamptz(6)
+  archivedAt          DateTime?     @map("archived_at") @db.Timestamptz(6)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version             Int           @default(0)
+
+  // Phase S2 — Supabase Auth link
+  authUserId          String?              @unique @map("auth_user_id") @db.Uuid
+  authMigrationState  AuthMigrationState   @default(PENDING) @map("auth_migration_state")
+  authMigratedAt      DateTime?            @map("auth_migrated_at") @db.Timestamptz(6)
+
+  society                    Society                    @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  roles                      UserRole[]
+  sessions                   UserSession[]
+  resetTokens                PasswordResetToken[]
+  audits                     AuditLog[]
+  resident                   Resident?
+  staffProfile               StaffMember?               @relation("StaffUser")
+  workerProfile              ServiceWorker?             @relation("WorkerUser")
+  createdFeePlans            FeePlan[]                  @relation("FeePlanCreator")
+  assignedFees               ResidentFeeAssignment[]    @relation("FeeAssignmentActor")
+  financialBatches           FinancialBatch[]           @relation("FinancialBatchActor")
+  recordedPayments           Payment[]                  @relation("PaymentActor")
+  paymentAdjustments         PaymentAdjustment[]        @relation("AdjustmentActor")
+  discountsOrWaivers         DiscountOrWaiver[]         @relation("DiscountActor")
+  paymentReversals           PaymentReversal[]          @relation("ReversalActor")
+  refunds                    Refund[]                   @relation("RefundActor")
+  issuedReceipts             Receipt[]                  @relation("ReceiptIssuer")
+  notificationRecipients     NotificationRecipient[]
+  notificationPreference     NotificationPreference?
+  profileCorrectionRequests  ProfileCorrectionRequest[] @relation("ProfileCorrectionRequester")
+  resolvedProfileCorrections ProfileCorrectionRequest[] @relation("ProfileCorrectionResolver")
+  createdFinancialSettings   FinancialSettingPeriod[]   @relation("FinancialSettingCreator")
+
+  @@index([societyId, status])
+  @@map("user_account")
+}
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId   String   @map("society_id") @db.Uuid
+  code        String   @db.VarChar(80)
+  displayName String   @map("display_name") @db.VarChar(120)
+  description String?  @db.VarChar(300)
+  systemRole  Boolean  @default(false) @map("system_role")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version     Int      @default(0)
+
+  society     Society          @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([societyId, code], name: "uk_role_society_code")
+  @@index([societyId, active])
+  @@map("role")
+}
+
+model Permission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(120)
+  description String   @db.VarChar(300)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version     Int      @default(0)
+
+  roles RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  grantedAt    DateTime @default(now()) @map("granted_at") @db.Timestamptz(6)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model UserRole {
+  societyId  String   @map("society_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  roleId     String   @map("role_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+
+  society Society     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  user    UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role    Role        @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([societyId, userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_role")
+}
+
+model UserSession {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId     String    @map("society_id") @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  tokenHash     String    @unique @map("token_hash") @db.Char(64)
+  csrfTokenHash String    @map("csrf_token_hash") @db.Char(64)
+  issuedAt      DateTime  @default(now()) @map("issued_at") @db.Timestamptz(6)
+  lastSeenAt    DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedReason String?   @map("revoked_reason") @db.VarChar(200)
+  sourceIp      String?   @map("source_ip") @db.VarChar(64)
+  userAgent     String?   @map("user_agent") @db.VarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  society Society     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  user    UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([societyId, expiresAt])
+  @@map("user_session")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_token")
+}
+
+model SystemSetting {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String?   @map("society_id") @db.Uuid
+  settingKey      String    @map("setting_key") @db.VarChar(160)
+  valueType       String    @map("value_type") @db.VarChar(30)
+  settingValue    String?   @map("setting_value")
+  secretReference String?   @map("secret_reference") @db.VarChar(255)
+  effectiveFrom   DateTime  @default(now()) @map("effective_from") @db.Timestamptz(6)
+  archivedAt      DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version         Int       @default(0)
+
+  society Society? @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, settingKey, archivedAt])
+  @@map("system_setting")
+}
+
+model AuditLog {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId     String?      @map("society_id") @db.Uuid
+  actorUserId   String?      @map("actor_user_id") @db.Uuid
+  action        String       @db.VarChar(120)
+  targetType    String?      @map("target_type") @db.VarChar(100)
+  targetId      String?      @map("target_id") @db.VarChar(100)
+  outcome       AuditOutcome
+  reason        String?      @db.VarChar(500)
+  correlationId String?      @map("correlation_id") @db.VarChar(100)
+  safeMetadata  Json         @default("{}") @map("safe_metadata")
+  sourceIp      String?      @map("source_ip") @db.VarChar(64)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  society Society?     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  actor   UserAccount? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([societyId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_log")
+}
+
+model OutboxEvent {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  aggregateType    String       @map("aggregate_type") @db.VarChar(100)
+  aggregateId      String       @map("aggregate_id") @db.VarChar(100)
+  eventType        String       @map("event_type") @db.VarChar(160)
+  payload          Json
+  deduplicationKey String       @unique @map("deduplication_key") @db.VarChar(180)
+  status           OutboxStatus @default(PENDING)
+  availableAt      DateTime     @default(now()) @map("available_at") @db.Timestamptz(6)
+  processedAt      DateTime?    @map("processed_at") @db.Timestamptz(6)
+  failedAttempts   Int          @default(0) @map("failed_attempts")
+  lastError        String?      @map("last_error") @db.VarChar(1000)
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([status, availableAt])
+  @@map("outbox_event")
+}
+
+model Property {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId            String       @map("society_id") @db.Uuid
+  block                String       @db.VarChar(80)
+  street               String?      @db.VarChar(160)
+  propertyNumber       String       @map("property_number") @db.VarChar(80)
+  normalizedAddressKey String       @map("normalized_address_key") @db.VarChar(320)
+  type                 PropertyType
+  active               Boolean      @default(true)
+  archivedAt           DateTime?    @map("archived_at") @db.Timestamptz(6)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version              Int          @default(0)
+
+  society             Society              @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  units               Unit[]
+  complaints          Complaint[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@unique([societyId, normalizedAddressKey], name: "uk_property_society_address")
+  @@index([societyId, block, active])
+  @@map("property")
+}
+
+model Unit {
+  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId           String     @map("property_id") @db.Uuid
+  unitNumber           String     @map("unit_number") @db.VarChar(80)
+  normalizedUnitNumber String     @map("normalized_unit_number") @db.VarChar(80)
+  status               UnitStatus @default(AVAILABLE)
+  parkingInformation   String?    @map("parking_information") @db.VarChar(300)
+  archivedAt           DateTime?  @map("archived_at") @db.Timestamptz(6)
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version              Int        @default(0)
+
+  property            Property             @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  occupancies         ResidentOccupancy[]
+  feePlans            FeePlan[]
+  complaints          Complaint[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@unique([propertyId, normalizedUnitNumber], name: "uk_unit_property_number")
+  @@index([propertyId, status])
+  @@map("unit")
+}
+
+model Resident {
+  id                         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId                  String         @map("society_id") @db.Uuid
+  userId                     String?        @unique @map("user_id") @db.Uuid
+  residentNumber             String         @map("resident_number") @db.VarChar(80)
+  fullName                   String         @map("full_name") @db.VarChar(160)
+  normalizedFullName         String         @map("normalized_full_name") @db.VarChar(160)
+  guardianName               String?        @map("guardian_name") @db.VarChar(160)
+  dateOfBirth                DateTime?      @map("date_of_birth") @db.Date
+  gender                     Gender         @default(UNDISCLOSED)
+  email                      String?        @db.VarChar(254)
+  primaryPhone               String         @map("primary_phone") @db.VarChar(30)
+  alternatePhone             String?        @map("alternate_phone") @db.VarChar(30)
+  identityCiphertext         String?        @map("identity_ciphertext") @db.Text
+  identitySearchHash         String?        @map("identity_search_hash") @db.Char(64)
+  identityLastFour           String?        @map("identity_last_four") @db.VarChar(4)
+  permanentAddress           String?        @map("permanent_address") @db.VarChar(500)
+  emergencyContactName       String?        @map("emergency_contact_name") @db.VarChar(160)
+  emergencyContactPhone      String?        @map("emergency_contact_phone") @db.VarChar(30)
+  profilePhotographObjectKey String?        @map("profile_photograph_object_key") @db.VarChar(500)
+  householdSize              Int            @default(1) @map("household_size")
+  status                     ResidentStatus @default(ACTIVE)
+  suspensionReason           String?        @map("suspension_reason") @db.VarChar(500)
+  archivedAt                 DateTime?      @map("archived_at") @db.Timestamptz(6)
+  createdAt                  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                    Int            @default(0)
+
+  society             Society                    @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  user                UserAccount?               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  occupancies         ResidentOccupancy[]
+  householdMembers    HouseholdMember[]
+  vehicles            Vehicle[]
+  documents           ResidentDocument[]
+  idCards             ResidentIDCard[]
+  feeAssignments      ResidentFeeAssignment[]
+  monthlyDues         MonthlyDue[]
+  ledgerEntries       FinancialLedgerEntry[]
+  payments            Payment[]
+  creditBalance       ResidentCreditBalance?
+  complaints          Complaint[]
+  maintenanceRequests MaintenanceRequest[]
+  serviceRatings      ServiceRating[]
+  correctionRequests  ProfileCorrectionRequest[]
+
+  @@unique([societyId, residentNumber], name: "uk_resident_society_number")
+  @@index([societyId, status, residentNumber])
+  @@index([societyId, normalizedFullName])
+  @@index([societyId, primaryPhone])
+  @@index([societyId, email])
+  @@index([societyId, identitySearchHash])
+  @@map("resident")
+}
+
+model ResidentOccupancy {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  residentId         String        @map("resident_id") @db.Uuid
+  unitId             String        @map("unit_id") @db.Uuid
+  occupancyType      OccupancyType @map("occupancy_type")
+  primaryResident    Boolean       @default(true) @map("primary_resident")
+  startDate          DateTime      @map("start_date") @db.Date
+  endDate            DateTime?     @map("end_date") @db.Date
+  moveOutReason      String?       @map("move_out_reason") @db.VarChar(500)
+  propertyOwnerName  String?       @map("property_owner_name") @db.VarChar(160)
+  propertyOwnerPhone String?       @map("property_owner_phone") @db.VarChar(30)
+  propertyOwnerEmail String?       @map("property_owner_email") @db.VarChar(254)
+  tenancyStartDate   DateTime?     @map("tenancy_start_date") @db.Date
+  tenancyEndDate     DateTime?     @map("tenancy_end_date") @db.Date
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version            Int           @default(0)
+
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  unit     Unit     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+
+  @@index([residentId, startDate])
+  @@index([unitId, endDate])
+  @@map("resident_occupancy")
+}
+
+model HouseholdMember {
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  residentId       String                @map("resident_id") @db.Uuid
+  fullName         String                @map("full_name") @db.VarChar(160)
+  age              Int?
+  relationship     String                @db.VarChar(80)
+  dateOfBirth      DateTime?             @map("date_of_birth") @db.Date
+  gender           Gender                @default(UNDISCLOSED)
+  phone            String?               @db.VarChar(30)
+  identityLastFour String?               @map("identity_last_four") @db.VarChar(4)
+  emergencyContact Boolean               @default(false) @map("emergency_contact")
+  status           HouseholdMemberStatus @default(ACTIVE)
+  movedOutAt       DateTime?             @map("moved_out_at") @db.Date
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int                   @default(0)
+
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
+
+  @@index([residentId, status])
+  @@map("household_member")
+}
+
+model Vehicle {
+  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId                    String    @map("society_id") @db.Uuid
+  residentId                   String    @map("resident_id") @db.Uuid
+  type                         String    @db.VarChar(80)
+  name                         String?   @db.VarChar(100)
+  manufacturer                 String?   @db.VarChar(100)
+  model                        String?   @db.VarChar(100)
+  colour                       String?   @db.VarChar(60)
+  registrationNumber           String    @map("registration_number") @db.VarChar(40)
+  normalizedRegistrationNumber String    @map("normalized_registration_number") @db.VarChar(40)
+  parkingPermitNumber          String?   @map("parking_permit_number") @db.VarChar(80)
+  parkingLocation              String?   @map("parking_location") @db.VarChar(160)
+  active                       Boolean   @default(true)
+  deactivatedAt                DateTime? @map("deactivated_at") @db.Timestamptz(6)
+  createdAt                    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                      Int       @default(0)
+
+  society  Society  @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
+
+  @@index([residentId, active])
+  @@index([societyId, normalizedRegistrationNumber, active])
+  @@map("vehicle")
+}
+
+model ResidentDocument {
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  residentId       String                   @map("resident_id") @db.Uuid
+  category         ResidentDocumentCategory
+  status           ResidentDocumentStatus   @default(ACTIVE)
+  objectKey        String                   @unique @map("object_key") @db.VarChar(500)
+  originalFileName String                   @map("original_file_name") @db.VarChar(255)
+  mediaType        String                   @map("media_type") @db.VarChar(120)
+  sizeBytes        BigInt                   @map("size_bytes")
+  checksumSha256   String                   @map("checksum_sha256") @db.Char(64)
+  uploadedByUserId String                   @map("uploaded_by_user_id") @db.Uuid
+  replacedById     String?                  @map("replaced_by_id") @db.Uuid
+  archivedAt       DateTime?                @map("archived_at") @db.Timestamptz(6)
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int                      @default(0)
+
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
+
+  @@index([residentId, category, status])
+  @@map("resident_document")
+}
+
+model ResidentFeeAssignment {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  residentId       String    @map("resident_id") @db.Uuid
+  monthlyAmount    Decimal   @map("monthly_amount") @db.Decimal(19, 4)
+  securityDeposit  Decimal?  @map("security_deposit") @db.Decimal(19, 4)
+  currency         String    @db.Char(3)
+  effectiveFrom    DateTime  @map("effective_from") @db.Date
+  effectiveTo      DateTime? @map("effective_to") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int       @default(0)
+  feePlanId        String?   @map("fee_plan_id") @db.Uuid
+  assignedByUserId String?   @map("assigned_by_user_id") @db.Uuid
+  reason           String?   @db.VarChar(500)
+
+  resident   Resident     @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  feePlan    FeePlan?     @relation(fields: [feePlanId], references: [id], onDelete: Restrict)
+  assignedBy UserAccount? @relation("FeeAssignmentActor", fields: [assignedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([residentId, effectiveFrom, effectiveTo])
+  @@map("resident_fee_assignment")
+}
+
+model FeePlan {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId         String        @map("society_id") @db.Uuid
+  unitId            String?       @map("unit_id") @db.Uuid
+  propertyType      PropertyType? @map("property_type")
+  name              String        @db.VarChar(160)
+  description       String?       @db.VarChar(500)
+  scope             FeePlanScope
+  monthlyBaseAmount Decimal       @map("monthly_base_amount") @db.Decimal(18, 2)
+  currency          String        @db.Char(3)
+  effectiveFrom     DateTime      @map("effective_from") @db.Date
+  effectiveTo       DateTime?     @map("effective_to") @db.Date
+  dueDay            Int           @default(10) @map("due_day")
+  gracePeriodDays   Int           @default(0) @map("grace_period_days")
+  lateFeeType       LateFeeType   @default(NONE) @map("late_fee_type")
+  lateFeeValue      Decimal       @default(0) @map("late_fee_value") @db.Decimal(18, 2)
+  lateFeeRecurring  Boolean       @default(false) @map("late_fee_recurring")
+  active            Boolean       @default(true)
+  createdByUserId   String        @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int           @default(0)
+
+  society     Society                 @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  unit        Unit?                   @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  createdBy   UserAccount             @relation("FeePlanCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  components  FeePlanComponent[]
+  assignments ResidentFeeAssignment[]
+  dues        MonthlyDue[]
+  lateFeeRule LateFeeRule?
+
+  @@index([societyId, scope, active, effectiveFrom, effectiveTo])
+  @@index([unitId, active])
+  @@map("fee_plan")
+}
+
+model FeePlanComponent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  feePlanId String   @map("fee_plan_id") @db.Uuid
+  name      String   @db.VarChar(120)
+  amount    Decimal  @db.Decimal(18, 2)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  feePlan FeePlan @relation(fields: [feePlanId], references: [id], onDelete: Restrict)
+
+  @@index([feePlanId, sortOrder])
+  @@map("fee_plan_component")
+}
+
+model LateFeeRule {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  feePlanId String      @unique @map("fee_plan_id") @db.Uuid
+  type      LateFeeType
+  value     Decimal     @db.Decimal(18, 2)
+  recurring Boolean     @default(false)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version   Int         @default(0)
+  feePlan   FeePlan     @relation(fields: [feePlanId], references: [id], onDelete: Restrict)
+
+  @@map("late_fee_rule")
+}
+
+model BillingPeriod {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId String           @map("society_id") @db.Uuid
+  year      Int
+  month     Int
+  startsAt  DateTime         @map("starts_at") @db.Date
+  endsAt    DateTime         @map("ends_at") @db.Date
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  society   Society          @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  dues      MonthlyDue[]
+  batches   FinancialBatch[]
+
+  @@unique([societyId, year, month], name: "uk_billing_period_society_month")
+  @@map("billing_period")
+}
+
+model FinancialBatch {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String               @map("society_id") @db.Uuid
+  billingPeriodId String               @map("billing_period_id") @db.Uuid
+  idempotencyKey  String               @unique @map("idempotency_key") @db.VarChar(180)
+  status          FinancialBatchStatus @default(PROCESSING)
+  generatedCount  Int                  @default(0) @map("generated_count")
+  skippedCount    Int                  @default(0) @map("skipped_count")
+  failedCount     Int                  @default(0) @map("failed_count")
+  createdByUserId String               @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt     DateTime?            @map("completed_at") @db.Timestamptz(6)
+  society         Society              @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  billingPeriod   BillingPeriod        @relation(fields: [billingPeriodId], references: [id], onDelete: Restrict)
+  createdBy       UserAccount          @relation("FinancialBatchActor", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  dues            MonthlyDue[]
+
+  @@index([societyId, createdAt])
+  @@map("financial_batch")
+}
+
+model MonthlyDue {
+  id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId          String                 @map("society_id") @db.Uuid
+  residentId         String                 @map("resident_id") @db.Uuid
+  billingPeriodId    String                 @map("billing_period_id") @db.Uuid
+  feePlanId          String?                @map("fee_plan_id") @db.Uuid
+  financialBatchId   String?                @map("financial_batch_id") @db.Uuid
+  status             DueStatus              @default(PENDING)
+  currency           String                 @db.Char(3)
+  principalAmount    Decimal                @map("principal_amount") @db.Decimal(18, 2)
+  totalAmount        Decimal                @map("total_amount") @db.Decimal(18, 2)
+  paidAmount         Decimal                @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  waivedAmount       Decimal                @default(0) @map("waived_amount") @db.Decimal(18, 2)
+  dueDate            DateTime               @map("due_date") @db.Date
+  graceEndsAt        DateTime               @map("grace_ends_at") @db.Date
+  feePlanSnapshot    Json                   @map("fee_plan_snapshot")
+  unitSnapshot       Json                   @map("unit_snapshot")
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version            Int                    @default(0)
+  society            Society                @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident           Resident               @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  billingPeriod      BillingPeriod          @relation(fields: [billingPeriodId], references: [id], onDelete: Restrict)
+  feePlan            FeePlan?               @relation(fields: [feePlanId], references: [id], onDelete: Restrict)
+  financialBatch     FinancialBatch?        @relation(fields: [financialBatchId], references: [id], onDelete: Restrict)
+  lineItems          DueLineItem[]
+  allocations        PaymentAllocation[]
+  adjustments        PaymentAdjustment[]
+  discountsOrWaivers DiscountOrWaiver[]
+  ledgerEntries      FinancialLedgerEntry[]
+
+  @@unique([residentId, billingPeriodId], name: "uk_due_resident_period")
+  @@index([societyId, status, dueDate])
+  @@index([residentId, dueDate])
+  @@map("monthly_due")
+}
+
+model DueLineItem {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  monthlyDueId        String          @map("monthly_due_id") @db.Uuid
+  type                DueLineItemType
+  description         String          @db.VarChar(240)
+  amount              Decimal         @db.Decimal(18, 2)
+  calculationSnapshot Json?           @map("calculation_snapshot")
+  idempotencyKey      String          @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  monthlyDue          MonthlyDue      @relation(fields: [monthlyDueId], references: [id], onDelete: Restrict)
+
+  @@index([monthlyDueId, type])
+  @@map("due_line_item")
+}
+
+model FinancialLedgerEntry {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String          @map("society_id") @db.Uuid
+  residentId      String          @map("resident_id") @db.Uuid
+  monthlyDueId    String?         @map("monthly_due_id") @db.Uuid
+  paymentId       String?         @map("payment_id") @db.Uuid
+  type            LedgerEntryType
+  direction       LedgerDirection
+  amount          Decimal         @db.Decimal(18, 2)
+  currency        String          @db.Char(3)
+  eventDate       DateTime        @map("event_date") @db.Timestamptz(6)
+  reference       String          @db.VarChar(180)
+  description     String          @db.VarChar(300)
+  idempotencyKey  String          @unique @map("idempotency_key") @db.VarChar(180)
+  reversesEntryId String?         @map("reverses_entry_id") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  society         Society         @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident        Resident        @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  monthlyDue      MonthlyDue?     @relation(fields: [monthlyDueId], references: [id], onDelete: Restrict)
+  payment         Payment?        @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([residentId, eventDate, id])
+  @@index([societyId, type, eventDate])
+  @@map("financial_ledger_entry")
+}
+
+model Payment {
+  id                   String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId            String                       @map("society_id") @db.Uuid
+  residentId           String                       @map("resident_id") @db.Uuid
+  amount               Decimal                      @db.Decimal(18, 2)
+  currency             String                       @db.Char(3)
+  paymentDate          DateTime                     @map("payment_date") @db.Timestamptz(6)
+  method               PaymentMethod
+  status               PaymentStatus                @default(INITIATED)
+  transactionReference String?                      @map("transaction_reference") @db.VarChar(180)
+  idempotencyKey       String                       @unique @map("idempotency_key") @db.VarChar(180)
+  allocationStrategy   AllocationStrategy           @map("allocation_strategy")
+  allocationCriteria   Json?                        @map("allocation_criteria") @db.JsonB
+  notes                String?                      @db.VarChar(500)
+  recordedByUserId     String?                      @map("recorded_by_user_id") @db.Uuid
+  confirmedAt          DateTime?                    @map("confirmed_at") @db.Timestamptz(6)
+  reversedAt           DateTime?                    @map("reversed_at") @db.Timestamptz(6)
+  createdAt            DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version              Int                          @default(0)
+  society              Society                      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident             Resident                     @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  recordedBy           UserAccount?                 @relation("PaymentActor", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  allocations          PaymentAllocation[]
+  proofs               PaymentProof[]
+  providerTransactions PaymentProviderTransaction[]
+  ledgerEntries        FinancialLedgerEntry[]
+  reversal             PaymentReversal?
+  refunds              Refund[]
+  receipt              Receipt?
+
+  @@unique([societyId, transactionReference], name: "uk_payment_society_reference")
+  @@index([societyId, status, paymentDate])
+  @@index([residentId, paymentDate])
+  @@map("payment")
+}
+
+model PaymentAllocation {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId    String     @map("payment_id") @db.Uuid
+  monthlyDueId String     @map("monthly_due_id") @db.Uuid
+  amount       Decimal    @db.Decimal(18, 2)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  payment      Payment    @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  monthlyDue   MonthlyDue @relation(fields: [monthlyDueId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, monthlyDueId], name: "uk_payment_due_allocation")
+  @@index([monthlyDueId])
+  @@map("payment_allocation")
+}
+
+model PaymentProof {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId        String    @map("payment_id") @db.Uuid
+  objectKey        String    @unique @map("object_key") @db.VarChar(500)
+  originalFileName String    @map("original_file_name") @db.VarChar(255)
+  mediaType        String    @map("media_type") @db.VarChar(120)
+  sizeBytes        BigInt    @map("size_bytes")
+  checksumSha256   String    @map("checksum_sha256") @db.Char(64)
+  reviewedAt       DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  reviewedByUserId String?   @map("reviewed_by_user_id") @db.Uuid
+  rejectionReason  String?   @map("rejection_reason") @db.VarChar(500)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  payment          Payment   @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, createdAt])
+  @@map("payment_proof")
+}
+
+model PaymentAdjustment {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  monthlyDueId   String         @map("monthly_due_id") @db.Uuid
+  type           AdjustmentType
+  amount         Decimal        @db.Decimal(18, 2)
+  currency       String         @db.Char(3)
+  reason         String         @db.VarChar(500)
+  actedByUserId  String         @map("acted_by_user_id") @db.Uuid
+  idempotencyKey String         @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  monthlyDue     MonthlyDue     @relation(fields: [monthlyDueId], references: [id], onDelete: Restrict)
+  actedBy        UserAccount    @relation("AdjustmentActor", fields: [actedByUserId], references: [id], onDelete: Restrict)
+
+  @@map("payment_adjustment")
+}
+
+model DiscountOrWaiver {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  monthlyDueId   String         @map("monthly_due_id") @db.Uuid
+  type           AdjustmentType
+  amount         Decimal        @db.Decimal(18, 2)
+  currency       String         @db.Char(3)
+  reason         String         @db.VarChar(500)
+  actedByUserId  String         @map("acted_by_user_id") @db.Uuid
+  idempotencyKey String         @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  monthlyDue     MonthlyDue     @relation(fields: [monthlyDueId], references: [id], onDelete: Restrict)
+  actedBy        UserAccount    @relation("DiscountActor", fields: [actedByUserId], references: [id], onDelete: Restrict)
+
+  @@map("discount_or_waiver")
+}
+
+model PaymentProviderTransaction {
+  id                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId         String                    @map("payment_id") @db.Uuid
+  provider          String                    @db.VarChar(80)
+  providerReference String?                   @map("provider_reference") @db.VarChar(180)
+  providerEventId   String?                   @unique @map("provider_event_id") @db.VarChar(180)
+  status            ProviderTransactionStatus @default(CREATED)
+  amount            Decimal                   @db.Decimal(18, 2)
+  currency          String                    @db.Char(3)
+  idempotencyKey    String                    @unique @map("idempotency_key") @db.VarChar(180)
+  safeResponse      Json?                     @map("safe_response")
+  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  payment           Payment                   @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([provider, status])
+  @@map("payment_provider_transaction")
+}
+
+model PaymentReversal {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId      String      @unique @map("payment_id") @db.Uuid
+  amount         Decimal     @db.Decimal(18, 2)
+  reason         String      @db.VarChar(500)
+  actedByUserId  String      @map("acted_by_user_id") @db.Uuid
+  idempotencyKey String      @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  payment        Payment     @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  actedBy        UserAccount @relation("ReversalActor", fields: [actedByUserId], references: [id], onDelete: Restrict)
+
+  @@map("payment_reversal")
+}
+
+model Refund {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId      String       @map("payment_id") @db.Uuid
+  amount         Decimal      @db.Decimal(18, 2)
+  currency       String       @db.Char(3)
+  status         RefundStatus @default(CONFIRMED)
+  reason         String       @db.VarChar(500)
+  actedByUserId  String       @map("acted_by_user_id") @db.Uuid
+  idempotencyKey String       @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  payment        Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  actedBy        UserAccount  @relation("RefundActor", fields: [actedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId, createdAt])
+  @@map("refund")
+}
+
+model ResidentCreditBalance {
+  residentId String   @id @map("resident_id") @db.Uuid
+  amount     Decimal  @default(0) @db.Decimal(18, 2)
+  currency   String   @db.Char(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version    Int      @default(0)
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
+
+  @@map("resident_credit_balance")
+}
+
+model Receipt {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId        String        @unique @map("payment_id") @db.Uuid
+  receiptNumber    String        @unique @map("receipt_number") @db.VarChar(100)
+  verificationHash String        @unique @map("verification_hash") @db.Char(64)
+  pdfObjectKey     String        @map("pdf_object_key") @db.VarChar(500)
+  status           ReceiptStatus @default(ACTIVE)
+  issuedByUserId   String        @map("issued_by_user_id") @db.Uuid
+  issuedAt         DateTime      @default(now()) @map("issued_at") @db.Timestamptz(6)
+  reversedAt       DateTime?     @map("reversed_at") @db.Timestamptz(6)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  version          Int           @default(0)
+  payment          Payment       @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  issuedBy         UserAccount   @relation("ReceiptIssuer", fields: [issuedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([status, issuedAt])
+  @@map("receipt")
+}
+
+model ReceiptSequence {
+  societyId    String   @map("society_id") @db.Uuid
+  sequenceYear Int      @map("sequence_year")
+  nextValue    BigInt   @default(1) @map("next_value")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  society      Society  @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@id([societyId, sequenceYear])
+  @@map("receipt_sequence")
+}
+
+model ResidentIDCard {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  residentId       String               @map("resident_id") @db.Uuid
+  cardNumber       String               @unique @map("card_number") @db.VarChar(100)
+  verificationHash String               @unique @map("verification_hash") @db.Char(64)
+  pdfObjectKey     String               @map("pdf_object_key") @db.VarChar(500)
+  status           ResidentIDCardStatus @default(ACTIVE)
+  issuedAt         DateTime             @default(now()) @map("issued_at") @db.Timestamptz(6)
+  expiresAt        DateTime?            @map("expires_at") @db.Timestamptz(6)
+  revokedAt        DateTime?            @map("revoked_at") @db.Timestamptz(6)
+  revocationReason String?              @map("revocation_reason") @db.VarChar(500)
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  version          Int                  @default(0)
+
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
+
+  @@index([residentId, status, issuedAt])
+  @@map("resident_id_card")
+}
+
+model ResidentIDSequence {
+  societyId    String   @map("society_id") @db.Uuid
+  sequenceYear Int      @map("sequence_year")
+  nextValue    BigInt   @default(1) @map("next_value")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  society Society @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@id([societyId, sequenceYear])
+  @@map("resident_id_sequence")
+}
+
+model Department {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId         String             @map("society_id") @db.Uuid
+  name              String             @db.VarChar(120)
+  normalizedName    String             @map("normalized_name") @db.VarChar(120)
+  description       String?            @db.VarChar(500)
+  displayOrder      Int                @default(0) @map("display_order")
+  active            Boolean            @default(true)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int                @default(0)
+  society           Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  jobTitles         JobTitle[]
+  employmentRecords EmploymentRecord[]
+
+  @@unique([societyId, normalizedName], name: "uk_department_society_name")
+  @@index([societyId, active, displayOrder])
+  @@map("department")
+}
+
+model JobTitle {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId         String             @map("society_id") @db.Uuid
+  departmentId      String             @map("department_id") @db.Uuid
+  name              String             @db.VarChar(120)
+  normalizedName    String             @map("normalized_name") @db.VarChar(120)
+  description       String?            @db.VarChar(500)
+  displayOrder      Int                @default(0) @map("display_order")
+  active            Boolean            @default(true)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int                @default(0)
+  society           Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  department        Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  employmentRecords EmploymentRecord[]
+
+  @@unique([departmentId, normalizedName], name: "uk_job_title_department_name")
+  @@index([societyId, active, displayOrder])
+  @@map("job_title")
+}
+
+model StaffMember {
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId             String               @map("society_id") @db.Uuid
+  userId                String?              @unique @map("user_id") @db.Uuid
+  staffNumber           String               @map("staff_number") @db.VarChar(80)
+  fullName              String               @map("full_name") @db.VarChar(160)
+  normalizedFullName    String               @map("normalized_full_name") @db.VarChar(160)
+  guardianName          String?              @map("guardian_name") @db.VarChar(160)
+  identityCiphertext    String?              @map("identity_ciphertext") @db.Text
+  identitySearchHash    String?              @map("identity_search_hash") @db.Char(64)
+  identityLastFour      String?              @map("identity_last_four") @db.VarChar(4)
+  dateOfBirth           DateTime?            @map("date_of_birth") @db.Date
+  gender                Gender               @default(UNDISCLOSED)
+  email                 String?              @db.VarChar(254)
+  primaryPhone          String               @map("primary_phone") @db.VarChar(30)
+  alternatePhone        String?              @map("alternate_phone") @db.VarChar(30)
+  address               String?              @db.VarChar(500)
+  emergencyContactName  String?              @map("emergency_contact_name") @db.VarChar(160)
+  emergencyContactPhone String?              @map("emergency_contact_phone") @db.VarChar(30)
+  status                StaffStatus          @default(ACTIVE)
+  archivedAt            DateTime?            @map("archived_at") @db.Timestamptz(6)
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version               Int                  @default(0)
+  society               Society              @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  user                  UserAccount?         @relation("StaffUser", fields: [userId], references: [id], onDelete: Restrict)
+  employments           EmploymentRecord[]
+  statusHistory         StaffStatusHistory[]
+  documents             StaffDocument[]
+  salaryStructures      SalaryStructure[]
+  salaryRecords         SalaryRecord[]
+  supervisedEmployments EmploymentRecord[]   @relation("StaffSupervisor")
+
+  @@unique([societyId, staffNumber], name: "uk_staff_society_number")
+  @@index([societyId, status, staffNumber])
+  @@index([societyId, normalizedFullName])
+  @@index([societyId, primaryPhone])
+  @@index([societyId, identitySearchHash])
+  @@map("staff_member")
+}
+
+model EmploymentRecord {
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  staffId               String               @map("staff_id") @db.Uuid
+  departmentId          String               @map("department_id") @db.Uuid
+  jobTitleId            String               @map("job_title_id") @db.Uuid
+  supervisorStaffId     String?              @map("supervisor_staff_id") @db.Uuid
+  employmentType        EmploymentType       @map("employment_type")
+  joiningDate           DateTime             @map("joining_date") @db.Date
+  probationEndDate      DateTime?            @map("probation_end_date") @db.Date
+  effectiveFrom         DateTime             @map("effective_from") @db.Date
+  effectiveTo           DateTime?            @map("effective_to") @db.Date
+  workShift             String?              @map("work_shift") @db.VarChar(100)
+  paymentMethod         SalaryPaymentMethod? @map("payment_method")
+  bankDetailsCiphertext String?              @map("bank_details_ciphertext") @db.Text
+  notes                 String?              @db.VarChar(1000)
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version               Int                  @default(0)
+  staff                 StaffMember          @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  department            Department           @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  jobTitle              JobTitle             @relation(fields: [jobTitleId], references: [id], onDelete: Restrict)
+  supervisor            StaffMember?         @relation("StaffSupervisor", fields: [supervisorStaffId], references: [id], onDelete: Restrict)
+
+  @@index([staffId, effectiveFrom, effectiveTo])
+  @@index([departmentId, jobTitleId])
+  @@map("employment_record")
+}
+
+model StaffStatusHistory {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  staffId       String       @map("staff_id") @db.Uuid
+  fromStatus    StaffStatus? @map("from_status")
+  toStatus      StaffStatus  @map("to_status")
+  reason        String       @db.VarChar(500)
+  effectiveAt   DateTime     @map("effective_at") @db.Timestamptz(6)
+  actedByUserId String       @map("acted_by_user_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  staff         StaffMember  @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@index([staffId, effectiveAt])
+  @@map("staff_status_history")
+}
+
+model StaffDocument {
+  id               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  staffId          String                  @map("staff_id") @db.Uuid
+  category         String                  @db.VarChar(80)
+  objectKey        String                  @unique @map("object_key") @db.VarChar(500)
+  originalFileName String                  @map("original_file_name") @db.VarChar(255)
+  mediaType        String                  @map("media_type") @db.VarChar(120)
+  sizeBytes        BigInt                  @map("size_bytes")
+  checksumSha256   String                  @map("checksum_sha256") @db.Char(64)
+  status           WorkforceDocumentStatus @default(ACTIVE)
+  uploadedByUserId String                  @map("uploaded_by_user_id") @db.Uuid
+  archivedAt       DateTime?               @map("archived_at") @db.Timestamptz(6)
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  staff            StaffMember             @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@index([staffId, category, status])
+  @@map("staff_document")
+}
+
+model SalaryStructure {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  staffId         String          @map("staff_id") @db.Uuid
+  basicSalary     Decimal         @map("basic_salary") @db.Decimal(18, 2)
+  fixedAllowances Decimal         @default(0) @map("fixed_allowances") @db.Decimal(18, 2)
+  fixedDeductions Decimal         @default(0) @map("fixed_deductions") @db.Decimal(18, 2)
+  frequency       SalaryFrequency @default(MONTHLY)
+  currency        String          @db.Char(3)
+  effectiveFrom   DateTime        @map("effective_from") @db.Date
+  effectiveTo     DateTime?       @map("effective_to") @db.Date
+  notes           String?         @db.VarChar(500)
+  createdByUserId String          @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version         Int             @default(0)
+  staff           StaffMember     @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  salaryRecords   SalaryRecord[]
+
+  @@index([staffId, effectiveFrom, effectiveTo])
+  @@map("salary_structure")
+}
+
+model SalaryPeriod {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId String         @map("society_id") @db.Uuid
+  year      Int
+  month     Int
+  startsAt  DateTime       @map("starts_at") @db.Date
+  endsAt    DateTime       @map("ends_at") @db.Date
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  society   Society        @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  records   SalaryRecord[]
+
+  @@unique([societyId, year, month], name: "uk_salary_period_society_month")
+  @@map("salary_period")
+}
+
+model SalaryRecord {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  staffId           String             @map("staff_id") @db.Uuid
+  salaryPeriodId    String             @map("salary_period_id") @db.Uuid
+  salaryStructureId String             @map("salary_structure_id") @db.Uuid
+  basicSalary       Decimal            @map("basic_salary") @db.Decimal(18, 2)
+  allowances        Decimal            @default(0) @db.Decimal(18, 2)
+  deductions        Decimal            @default(0) @db.Decimal(18, 2)
+  adjustmentTotal   Decimal            @default(0) @map("adjustment_total") @db.Decimal(18, 2)
+  netPayable        Decimal            @map("net_payable") @db.Decimal(18, 2)
+  amountPaid        Decimal            @default(0) @map("amount_paid") @db.Decimal(18, 2)
+  currency          String             @db.Char(3)
+  status            SalaryRecordStatus @default(PENDING)
+  salarySnapshot    Json               @map("salary_snapshot") @db.JsonB
+  generatedByUserId String             @map("generated_by_user_id") @db.Uuid
+  generatedAt       DateTime           @default(now()) @map("generated_at") @db.Timestamptz(6)
+  paidAt            DateTime?          @map("paid_at") @db.Timestamptz(6)
+  notes             String?            @db.VarChar(500)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int                @default(0)
+  staff             StaffMember        @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  salaryPeriod      SalaryPeriod       @relation(fields: [salaryPeriodId], references: [id], onDelete: Restrict)
+  salaryStructure   SalaryStructure    @relation(fields: [salaryStructureId], references: [id], onDelete: Restrict)
+  payments          SalaryPayment[]
+  adjustments       SalaryAdjustment[]
+  slips             SalarySlip[]
+
+  @@unique([staffId, salaryPeriodId], name: "uk_salary_record_staff_period")
+  @@index([salaryPeriodId, status])
+  @@map("salary_record")
+}
+
+model SalaryPayment {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  salaryRecordId       String              @map("salary_record_id") @db.Uuid
+  amount               Decimal             @db.Decimal(18, 2)
+  reversedAmount       Decimal             @default(0) @map("reversed_amount") @db.Decimal(18, 2)
+  currency             String              @db.Char(3)
+  method               SalaryPaymentMethod
+  status               SalaryPaymentStatus @default(CONFIRMED)
+  paymentDate          DateTime            @map("payment_date") @db.Timestamptz(6)
+  transactionReference String?             @map("transaction_reference") @db.VarChar(180)
+  notes                String?             @db.VarChar(500)
+  proofObjectKey       String?             @map("proof_object_key") @db.VarChar(500)
+  recordedByUserId     String              @map("recorded_by_user_id") @db.Uuid
+  idempotencyKey       String              @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  salaryRecord         SalaryRecord        @relation(fields: [salaryRecordId], references: [id], onDelete: Restrict)
+
+  @@unique([transactionReference], name: "uk_salary_payment_reference")
+  @@index([salaryRecordId, paymentDate])
+  @@map("salary_payment")
+}
+
+model SalaryAdjustment {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  salaryRecordId String               @map("salary_record_id") @db.Uuid
+  type           SalaryAdjustmentType
+  amount         Decimal              @db.Decimal(18, 2)
+  reason         String               @db.VarChar(500)
+  actedByUserId  String               @map("acted_by_user_id") @db.Uuid
+  idempotencyKey String               @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  salaryRecord   SalaryRecord         @relation(fields: [salaryRecordId], references: [id], onDelete: Restrict)
+
+  @@index([salaryRecordId, createdAt])
+  @@map("salary_adjustment")
+}
+
+model SalarySlip {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  salaryRecordId   String           @map("salary_record_id") @db.Uuid
+  slipNumber       String           @unique @map("slip_number") @db.VarChar(100)
+  verificationHash String           @unique @map("verification_hash") @db.Char(64)
+  pdfObjectKey     String           @map("pdf_object_key") @db.VarChar(500)
+  status           SalarySlipStatus @default(ACTIVE)
+  issuedByUserId   String           @map("issued_by_user_id") @db.Uuid
+  issuedAt         DateTime         @default(now()) @map("issued_at") @db.Timestamptz(6)
+  reversedAt       DateTime?        @map("reversed_at") @db.Timestamptz(6)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  salaryRecord     SalaryRecord     @relation(fields: [salaryRecordId], references: [id], onDelete: Restrict)
+
+  @@index([salaryRecordId, status])
+  @@map("salary_slip")
+}
+
+model StaffIDSequence {
+  societyId    String   @map("society_id") @db.Uuid
+  sequenceYear Int      @map("sequence_year")
+  nextValue    BigInt   @default(1) @map("next_value")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  society      Society  @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@id([societyId, sequenceYear])
+  @@map("staff_id_sequence")
+}
+
+model SalarySlipSequence {
+  societyId    String   @map("society_id") @db.Uuid
+  sequenceYear Int      @map("sequence_year")
+  nextValue    BigInt   @default(1) @map("next_value")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  society      Society  @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@id([societyId, sequenceYear])
+  @@map("salary_slip_sequence")
+}
+
+model ContractorCompany {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId      String          @map("society_id") @db.Uuid
+  name           String          @db.VarChar(160)
+  normalizedName String          @map("normalized_name") @db.VarChar(160)
+  contactName    String?         @map("contact_name") @db.VarChar(160)
+  phone          String?         @db.VarChar(30)
+  email          String?         @db.VarChar(254)
+  address        String?         @db.VarChar(500)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version        Int             @default(0)
+  society        Society         @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  workers        ServiceWorker[]
+
+  @@unique([societyId, normalizedName], name: "uk_contractor_society_name")
+  @@map("contractor_company")
+}
+
+model WorkerCategory {
+  id                     String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId              String          @map("society_id") @db.Uuid
+  code                   String          @db.VarChar(30)
+  name                   String          @db.VarChar(120)
+  description            String?         @db.VarChar(500)
+  defaultDurationMinutes Int?            @map("default_duration_minutes")
+  defaultRate            Decimal?        @map("default_rate") @db.Decimal(18, 2)
+  currency               String?         @db.Char(3)
+  active                 Boolean         @default(true)
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                Int             @default(0)
+  society                Society         @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  workers                ServiceWorker[]
+
+  @@unique([societyId, code], name: "uk_worker_category_society_code")
+  @@unique([societyId, name], name: "uk_worker_category_society_name")
+  @@index([societyId, active])
+  @@map("worker_category")
+}
+
+model WorkerSkill {
+  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId      String                  @map("society_id") @db.Uuid
+  name           String                  @db.VarChar(120)
+  normalizedName String                  @map("normalized_name") @db.VarChar(120)
+  description    String?                 @db.VarChar(500)
+  active         Boolean                 @default(true)
+  createdAt      DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  society        Society                 @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  assignments    WorkerSkillAssignment[]
+
+  @@unique([societyId, normalizedName], name: "uk_worker_skill_society_name")
+  @@map("worker_skill")
+}
+
+model ServiceWorker {
+  id                  String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId           String                       @map("society_id") @db.Uuid
+  userId              String?                      @unique @map("user_id") @db.Uuid
+  workerNumber        String                       @map("worker_number") @db.VarChar(100)
+  primaryCategoryId   String                       @map("primary_category_id") @db.Uuid
+  contractorCompanyId String?                      @map("contractor_company_id") @db.Uuid
+  fullName            String                       @map("full_name") @db.VarChar(160)
+  normalizedFullName  String                       @map("normalized_full_name") @db.VarChar(160)
+  identityCiphertext  String?                      @map("identity_ciphertext") @db.Text
+  identitySearchHash  String?                      @map("identity_search_hash") @db.Char(64)
+  identityLastFour    String?                      @map("identity_last_four") @db.VarChar(4)
+  dateOfBirth         DateTime?                    @map("date_of_birth") @db.Date
+  primaryPhone        String                       @map("primary_phone") @db.VarChar(30)
+  alternatePhone      String?                      @map("alternate_phone") @db.VarChar(30)
+  email               String?                      @db.VarChar(254)
+  address             String?                      @db.VarChar(500)
+  emergencyContact    String?                      @map("emergency_contact") @db.VarChar(200)
+  relationship        WorkerRelationship
+  experienceYears     Int                          @default(0) @map("experience_years")
+  serviceArea         String                       @map("service_area") @db.VarChar(160)
+  rateNotes           String?                      @map("rate_notes") @db.VarChar(500)
+  registrationDate    DateTime                     @map("registration_date") @db.Date
+  status              WorkerStatus                 @default(AVAILABLE)
+  administrativeNotes String?                      @map("administrative_notes") @db.VarChar(1000)
+  archivedAt          DateTime?                    @map("archived_at") @db.Timestamptz(6)
+  createdAt           DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version             Int                          @default(0)
+  society             Society                      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  user                UserAccount?                 @relation("WorkerUser", fields: [userId], references: [id], onDelete: Restrict)
+  primaryCategory     WorkerCategory               @relation(fields: [primaryCategoryId], references: [id], onDelete: Restrict)
+  contractorCompany   ContractorCompany?           @relation(fields: [contractorCompanyId], references: [id], onDelete: Restrict)
+  skills              WorkerSkillAssignment[]
+  availability        WorkerAvailability[]
+  overrides           WorkerAvailabilityOverride[]
+  reservations        WorkerScheduleReservation[]
+  rates               WorkerRate[]
+  documents           WorkerDocument[]
+  performanceNotes    WorkerPerformanceNote[]
+  statusHistory       WorkerStatusHistory[]
+  ticketAssignments   WorkerAssignment[]
+  serviceRatings      ServiceRating[]
+
+  @@unique([societyId, workerNumber], name: "uk_worker_society_number")
+  @@index([societyId, status, primaryCategoryId])
+  @@index([societyId, normalizedFullName])
+  @@index([societyId, serviceArea])
+  @@map("service_worker")
+}
+
+model WorkerSkillAssignment {
+  workerId    String        @map("worker_id") @db.Uuid
+  skillId     String        @map("skill_id") @db.Uuid
+  proficiency String?       @db.VarChar(80)
+  assignedAt  DateTime      @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  worker      ServiceWorker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  skill       WorkerSkill   @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@id([workerId, skillId])
+  @@index([skillId])
+  @@map("worker_skill_assignment")
+}
+
+model WorkerAvailability {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workerId    String        @map("worker_id") @db.Uuid
+  dayOfWeek   Int           @map("day_of_week")
+  startMinute Int           @map("start_minute")
+  endMinute   Int           @map("end_minute")
+  serviceArea String?       @map("service_area") @db.VarChar(160)
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version     Int           @default(0)
+  worker      ServiceWorker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@unique([workerId, dayOfWeek, startMinute, endMinute], name: "uk_worker_availability_window")
+  @@index([workerId, dayOfWeek, active])
+  @@map("worker_availability")
+}
+
+model WorkerAvailabilityOverride {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workerId        String                   @map("worker_id") @db.Uuid
+  type            AvailabilityOverrideType
+  startsAt        DateTime                 @map("starts_at") @db.Timestamptz(6)
+  endsAt          DateTime                 @map("ends_at") @db.Timestamptz(6)
+  reason          String                   @db.VarChar(500)
+  createdByUserId String                   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  worker          ServiceWorker            @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, startsAt, endsAt])
+  @@map("worker_availability_override")
+}
+
+model WorkerScheduleReservation {
+  id                 String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workerId           String                    @map("worker_id") @db.Uuid
+  startsAt           DateTime                  @map("starts_at") @db.Timestamptz(6)
+  endsAt             DateTime                  @map("ends_at") @db.Timestamptz(6)
+  serviceArea        String?                   @map("service_area") @db.VarChar(160)
+  purpose            String                    @db.VarChar(300)
+  status             ScheduleReservationStatus @default(RESERVED)
+  createdByUserId    String                    @map("created_by_user_id") @db.Uuid
+  cancelledAt        DateTime?                 @map("cancelled_at") @db.Timestamptz(6)
+  cancellationReason String?                   @map("cancellation_reason") @db.VarChar(500)
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version            Int                       @default(0)
+  worker             ServiceWorker             @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, status, startsAt, endsAt])
+  @@map("worker_schedule_reservation")
+}
+
+model WorkerRate {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workerId      String        @map("worker_id") @db.Uuid
+  amount        Decimal       @db.Decimal(18, 2)
+  currency      String        @db.Char(3)
+  unit          String        @db.VarChar(40)
+  effectiveFrom DateTime      @map("effective_from") @db.Date
+  effectiveTo   DateTime?     @map("effective_to") @db.Date
+  notes         String?       @db.VarChar(500)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  worker        ServiceWorker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, effectiveFrom, effectiveTo])
+  @@map("worker_rate")
+}
+
+model WorkerDocument {
+  id               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workerId         String                  @map("worker_id") @db.Uuid
+  category         String                  @db.VarChar(80)
+  objectKey        String                  @unique @map("object_key") @db.VarChar(500)
+  originalFileName String                  @map("original_file_name") @db.VarChar(255)
+  mediaType        String                  @map("media_type") @db.VarChar(120)
+  sizeBytes        BigInt                  @map("size_bytes")
+  checksumSha256   String                  @map("checksum_sha256") @db.Char(64)
+  status           WorkforceDocumentStatus @default(ACTIVE)
+  uploadedByUserId String                  @map("uploaded_by_user_id") @db.Uuid
+  archivedAt       DateTime?               @map("archived_at") @db.Timestamptz(6)
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  worker           ServiceWorker           @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, category, status])
+  @@map("worker_document")
+}
+
+model WorkerPerformanceNote {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workerId         String        @map("worker_id") @db.Uuid
+  reliability      Int?
+  workQuality      Int?          @map("work_quality")
+  note             String        @db.VarChar(1000)
+  reviewDate       DateTime      @map("review_date") @db.Date
+  reviewedByUserId String        @map("reviewed_by_user_id") @db.Uuid
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  worker           ServiceWorker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, reviewDate])
+  @@map("worker_performance_note")
+}
+
+model WorkerStatusHistory {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workerId      String        @map("worker_id") @db.Uuid
+  fromStatus    WorkerStatus? @map("from_status")
+  toStatus      WorkerStatus  @map("to_status")
+  reason        String        @db.VarChar(500)
+  effectiveAt   DateTime      @map("effective_at") @db.Timestamptz(6)
+  actedByUserId String        @map("acted_by_user_id") @db.Uuid
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  worker        ServiceWorker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, effectiveAt])
+  @@map("worker_status_history")
+}
+
+model WorkerIDSequence {
+  societyId    String   @map("society_id") @db.Uuid
+  categoryCode String   @map("category_code") @db.VarChar(30)
+  sequenceYear Int      @map("sequence_year")
+  nextValue    BigInt   @default(1) @map("next_value")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  society      Society  @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@id([societyId, categoryCode, sequenceYear])
+  @@map("worker_id_sequence")
+}
+
+model ComplaintCategory {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId      String      @map("society_id") @db.Uuid
+  name           String      @db.VarChar(120)
+  normalizedName String      @map("normalized_name") @db.VarChar(120)
+  description    String?     @db.VarChar(500)
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version        Int         @default(0)
+  society        Society     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  complaints     Complaint[]
+
+  @@unique([societyId, normalizedName], name: "uk_complaint_category_society_name")
+  @@index([societyId, active])
+  @@map("complaint_category")
+}
+
+model MaintenanceCategory {
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId        String               @map("society_id") @db.Uuid
+  name             String               @db.VarChar(120)
+  normalizedName   String               @map("normalized_name") @db.VarChar(120)
+  description      String?              @db.VarChar(500)
+  workerCategoryId String?              @map("worker_category_id") @db.Uuid
+  requiredSkillId  String?              @map("required_skill_id") @db.Uuid
+  active           Boolean              @default(true)
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int                  @default(0)
+  society          Society              @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  requests         MaintenanceRequest[]
+
+  @@unique([societyId, normalizedName], name: "uk_maintenance_category_society_name")
+  @@index([societyId, active])
+  @@map("maintenance_category")
+}
+
+model TicketSequence {
+  societyId    String     @map("society_id") @db.Uuid
+  ticketType   TicketType @map("ticket_type")
+  sequenceYear Int        @map("sequence_year")
+  nextValue    BigInt     @default(1) @map("next_value")
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  society      Society    @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@id([societyId, ticketType, sequenceYear])
+  @@map("ticket_sequence")
+}
+
+model Complaint {
+  id                       String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId                String                             @map("society_id") @db.Uuid
+  residentId               String                             @map("resident_id") @db.Uuid
+  propertyId               String?                            @map("property_id") @db.Uuid
+  unitId                   String?                            @map("unit_id") @db.Uuid
+  categoryId               String                             @map("category_id") @db.Uuid
+  ticketNumber             String                             @map("ticket_number") @db.VarChar(80)
+  subject                  String                             @db.VarChar(180)
+  description              String                             @db.Text
+  location                 String?                            @db.VarChar(300)
+  residentUrgency          TicketPriority                     @default(NORMAL) @map("resident_urgency")
+  priority                 TicketPriority                     @default(NORMAL)
+  privacy                  ComplaintPrivacy                   @default(STANDARD)
+  preferredContactMethod   String?                            @map("preferred_contact_method") @db.VarChar(40)
+  status                   ComplaintStatus                    @default(SUBMITTED)
+  propertySnapshot         Json                               @default("{}") @map("property_snapshot")
+  targetResponseAt         DateTime?                          @map("target_response_at") @db.Timestamptz(6)
+  targetResolutionAt       DateTime?                          @map("target_resolution_at") @db.Timestamptz(6)
+  respondedAt              DateTime?                          @map("responded_at") @db.Timestamptz(6)
+  resolvedAt               DateTime?                          @map("resolved_at") @db.Timestamptz(6)
+  closedAt                 DateTime?                          @map("closed_at") @db.Timestamptz(6)
+  archivedAt               DateTime?                          @map("archived_at") @db.Timestamptz(6)
+  createdAt                DateTime                           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                  Int                                @default(0)
+  society                  Society                            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident                 Resident                           @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  property                 Property?                          @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  unit                     Unit?                              @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  category                 ComplaintCategory                  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  messages                 ComplaintMessage[]
+  attachments              ComplaintAttachment[]
+  statusHistory            ComplaintStatusHistory[]
+  administratorAssignments ComplaintAdministratorAssignment[]
+  escalations              EscalationRecord[]
+
+  @@unique([societyId, ticketNumber], name: "uk_complaint_society_ticket")
+  @@index([societyId, status, priority, createdAt])
+  @@index([residentId, createdAt])
+  @@index([privacy, status])
+  @@map("complaint")
+}
+
+model ComplaintMessage {
+  id           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId  String                  @map("complaint_id") @db.Uuid
+  authorUserId String                  @map("author_user_id") @db.Uuid
+  body         String                  @db.VarChar(4000)
+  visibility   TicketMessageVisibility @default(RESIDENT_VISIBLE)
+  createdAt    DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  complaint    Complaint               @relation(fields: [complaintId], references: [id], onDelete: Restrict)
+
+  @@index([complaintId, createdAt])
+  @@map("complaint_message")
+}
+
+model ComplaintAttachment {
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId      String                 @map("complaint_id") @db.Uuid
+  messageId        String?                @map("message_id") @db.Uuid
+  objectKey        String                 @unique @map("object_key") @db.VarChar(500)
+  originalFileName String                 @map("original_file_name") @db.VarChar(255)
+  mediaType        String                 @map("media_type") @db.VarChar(120)
+  sizeBytes        BigInt                 @map("size_bytes")
+  checksumSha256   String                 @map("checksum_sha256") @db.Char(64)
+  sensitive        Boolean                @default(false)
+  status           TicketAttachmentStatus @default(ACTIVE)
+  uploadedByUserId String                 @map("uploaded_by_user_id") @db.Uuid
+  createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  archivedAt       DateTime?              @map("archived_at") @db.Timestamptz(6)
+  complaint        Complaint              @relation(fields: [complaintId], references: [id], onDelete: Restrict)
+
+  @@index([complaintId, status])
+  @@map("complaint_attachment")
+}
+
+model ComplaintStatusHistory {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId         String           @map("complaint_id") @db.Uuid
+  fromStatus          ComplaintStatus? @map("from_status")
+  toStatus            ComplaintStatus  @map("to_status")
+  residentExplanation String?          @map("resident_explanation") @db.VarChar(1000)
+  internalReason      String?          @map("internal_reason") @db.VarChar(1000)
+  actedByUserId       String           @map("acted_by_user_id") @db.Uuid
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  complaint           Complaint        @relation(fields: [complaintId], references: [id], onDelete: Restrict)
+
+  @@index([complaintId, createdAt])
+  @@map("complaint_status_history")
+}
+
+model ComplaintAdministratorAssignment {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId         String    @map("complaint_id") @db.Uuid
+  administratorUserId String    @map("administrator_user_id") @db.Uuid
+  assignedByUserId    String    @map("assigned_by_user_id") @db.Uuid
+  reason              String?   @db.VarChar(500)
+  assignedAt          DateTime  @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  endedAt             DateTime? @map("ended_at") @db.Timestamptz(6)
+  complaint           Complaint @relation(fields: [complaintId], references: [id], onDelete: Restrict)
+
+  @@index([complaintId, endedAt])
+  @@map("complaint_administrator_assignment")
+}
+
+model MaintenanceRequest {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId                String                     @map("society_id") @db.Uuid
+  residentId               String                     @map("resident_id") @db.Uuid
+  propertyId               String?                    @map("property_id") @db.Uuid
+  unitId                   String?                    @map("unit_id") @db.Uuid
+  categoryId               String                     @map("category_id") @db.Uuid
+  ticketNumber             String                     @map("ticket_number") @db.VarChar(80)
+  subject                  String                     @db.VarChar(180)
+  description              String                     @db.Text
+  exactLocation            String                     @map("exact_location") @db.VarChar(300)
+  preferredVisitDate       DateTime?                  @map("preferred_visit_date") @db.Date
+  preferredStartMinute     Int?                       @map("preferred_start_minute")
+  preferredEndMinute       Int?                       @map("preferred_end_minute")
+  accessInstructions       String?                    @map("access_instructions") @db.VarChar(1000)
+  residentUrgency          TicketPriority             @default(NORMAL) @map("resident_urgency")
+  priority                 TicketPriority             @default(NORMAL)
+  preferredContactMethod   String?                    @map("preferred_contact_method") @db.VarChar(40)
+  contactDisclosureConsent Boolean                    @default(false) @map("contact_disclosure_consent")
+  status                   MaintenanceStatus          @default(SUBMITTED)
+  propertySnapshot         Json                       @default("{}") @map("property_snapshot")
+  targetResponseAt         DateTime?                  @map("target_response_at") @db.Timestamptz(6)
+  targetResolutionAt       DateTime?                  @map("target_resolution_at") @db.Timestamptz(6)
+  respondedAt              DateTime?                  @map("responded_at") @db.Timestamptz(6)
+  completedAt              DateTime?                  @map("completed_at") @db.Timestamptz(6)
+  closedAt                 DateTime?                  @map("closed_at") @db.Timestamptz(6)
+  archivedAt               DateTime?                  @map("archived_at") @db.Timestamptz(6)
+  createdAt                DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                  Int                        @default(0)
+  society                  Society                    @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident                 Resident                   @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  property                 Property?                  @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  unit                     Unit?                      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  category                 MaintenanceCategory        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  messages                 MaintenanceMessage[]
+  attachments              MaintenanceAttachment[]
+  statusHistory            MaintenanceStatusHistory[]
+  assignments              WorkerAssignment[]
+  appointments             MaintenanceAppointment[]
+  resolution               MaintenanceResolution?
+  rating                   ServiceRating?
+  escalations              EscalationRecord[]
+  disclosures              ContactDisclosureLog[]
+
+  @@unique([societyId, ticketNumber], name: "uk_maintenance_society_ticket")
+  @@index([societyId, status, priority, createdAt])
+  @@index([residentId, createdAt])
+  @@map("maintenance_request")
+}
+
+model MaintenanceMessage {
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId String                  @map("maintenance_request_id") @db.Uuid
+  authorUserId         String                  @map("author_user_id") @db.Uuid
+  body                 String                  @db.VarChar(4000)
+  visibility           TicketMessageVisibility @default(RESIDENT_VISIBLE)
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  request              MaintenanceRequest      @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+
+  @@index([maintenanceRequestId, createdAt])
+  @@map("maintenance_message")
+}
+
+model MaintenanceAttachment {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId String                 @map("maintenance_request_id") @db.Uuid
+  messageId            String?                @map("message_id") @db.Uuid
+  objectKey            String                 @unique @map("object_key") @db.VarChar(500)
+  originalFileName     String                 @map("original_file_name") @db.VarChar(255)
+  mediaType            String                 @map("media_type") @db.VarChar(120)
+  sizeBytes            BigInt                 @map("size_bytes")
+  checksumSha256       String                 @map("checksum_sha256") @db.Char(64)
+  sensitive            Boolean                @default(false)
+  status               TicketAttachmentStatus @default(ACTIVE)
+  uploadedByUserId     String                 @map("uploaded_by_user_id") @db.Uuid
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  archivedAt           DateTime?              @map("archived_at") @db.Timestamptz(6)
+  request              MaintenanceRequest     @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+
+  @@index([maintenanceRequestId, status])
+  @@map("maintenance_attachment")
+}
+
+model MaintenanceStatusHistory {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId String             @map("maintenance_request_id") @db.Uuid
+  fromStatus           MaintenanceStatus? @map("from_status")
+  toStatus             MaintenanceStatus  @map("to_status")
+  residentExplanation  String?            @map("resident_explanation") @db.VarChar(1000)
+  internalReason       String?            @map("internal_reason") @db.VarChar(1000)
+  actedByUserId        String             @map("acted_by_user_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  request              MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+
+  @@index([maintenanceRequestId, createdAt])
+  @@map("maintenance_status_history")
+}
+
+model WorkerAssignment {
+  id                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId String                   @map("maintenance_request_id") @db.Uuid
+  workerId             String                   @map("worker_id") @db.Uuid
+  status               WorkerAssignmentStatus   @default(ACTIVE)
+  reason               String                   @db.VarChar(500)
+  assignedByUserId     String                   @map("assigned_by_user_id") @db.Uuid
+  assignedAt           DateTime                 @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  endedAt              DateTime?                @map("ended_at") @db.Timestamptz(6)
+  version              Int                      @default(0)
+  request              MaintenanceRequest       @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+  worker               ServiceWorker            @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  appointments         MaintenanceAppointment[]
+
+  @@index([maintenanceRequestId, status])
+  @@index([workerId, status])
+  @@map("worker_assignment")
+}
+
+model MaintenanceAppointment {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId String             @map("maintenance_request_id") @db.Uuid
+  workerAssignmentId   String             @map("worker_assignment_id") @db.Uuid
+  workerId             String             @map("worker_id") @db.Uuid
+  reservationId        String?            @map("reservation_id") @db.Uuid
+  startsAt             DateTime           @map("starts_at") @db.Timestamptz(6)
+  endsAt               DateTime           @map("ends_at") @db.Timestamptz(6)
+  status               AppointmentStatus  @default(PROPOSED)
+  accessInstructions   String?            @map("access_instructions") @db.VarChar(1000)
+  changeReason         String?            @map("change_reason") @db.VarChar(500)
+  createdByUserId      String             @map("created_by_user_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version              Int                @default(0)
+  request              MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+  assignment           WorkerAssignment   @relation(fields: [workerAssignmentId], references: [id], onDelete: Restrict)
+
+  @@index([maintenanceRequestId, startsAt])
+  @@index([workerId, status, startsAt])
+  @@map("maintenance_appointment")
+}
+
+model MaintenanceResolution {
+  id                     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId   String             @unique @map("maintenance_request_id") @db.Uuid
+  workerId               String             @map("worker_id") @db.Uuid
+  workPerformed          String             @map("work_performed") @db.VarChar(4000)
+  residentSummary        String             @map("resident_summary") @db.VarChar(2000)
+  partsNotes             String?            @map("parts_notes") @db.VarChar(2000)
+  internalNotes          String?            @map("internal_notes") @db.VarChar(2000)
+  followUpRecommendation String?            @map("follow_up_recommendation") @db.VarChar(1000)
+  completedAt            DateTime           @map("completed_at") @db.Timestamptz(6)
+  verifiedByUserId       String?            @map("verified_by_user_id") @db.Uuid
+  residentConfirmedAt    DateTime?          @map("resident_confirmed_at") @db.Timestamptz(6)
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                Int                @default(0)
+  request                MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+
+  @@map("maintenance_resolution")
+}
+
+model ServiceRating {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId  String             @unique @map("maintenance_request_id") @db.Uuid
+  residentId            String             @map("resident_id") @db.Uuid
+  workerId              String             @map("worker_id") @db.Uuid
+  overall               Int
+  serviceQuality        Int                @map("service_quality")
+  timeliness            Int
+  professionalBehaviour Int                @map("professional_behaviour")
+  comments              String?            @db.VarChar(1000)
+  confidentialComments  String?            @map("confidential_comments") @db.VarChar(1000)
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version               Int                @default(0)
+  request               MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+  resident              Resident           @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  worker                ServiceWorker      @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, createdAt])
+  @@map("service_rating")
+}
+
+model ServiceLevelPolicy {
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId          String         @map("society_id") @db.Uuid
+  ticketType         TicketType     @map("ticket_type")
+  categoryId         String?        @map("category_id") @db.Uuid
+  priority           TicketPriority
+  responseMinutes    Int            @map("response_minutes")
+  resolutionMinutes  Int            @map("resolution_minutes")
+  escalationRoleCode String         @map("escalation_role_code") @db.VarChar(80)
+  active             Boolean        @default(true)
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version            Int            @default(0)
+  society            Society        @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@unique([societyId, ticketType, categoryId, priority], name: "uk_sla_policy_scope")
+  @@index([societyId, active])
+  @@map("service_level_policy")
+}
+
+model EscalationRecord {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId          String?             @map("complaint_id") @db.Uuid
+  maintenanceRequestId String?             @map("maintenance_request_id") @db.Uuid
+  kind                 EscalationKind
+  escalationRoleCode   String              @map("escalation_role_code") @db.VarChar(80)
+  idempotencyKey       String              @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  complaint            Complaint?          @relation(fields: [complaintId], references: [id], onDelete: Restrict)
+  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+
+  @@index([complaintId, createdAt])
+  @@index([maintenanceRequestId, createdAt])
+  @@map("escalation_record")
+}
+
+model ContactDisclosureLog {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceRequestId String             @map("maintenance_request_id") @db.Uuid
+  recipientType        String             @map("recipient_type") @db.VarChar(30)
+  recipientId          String             @map("recipient_id") @db.Uuid
+  disclosedFields      Json               @map("disclosed_fields")
+  policyBasis          String             @map("policy_basis") @db.VarChar(500)
+  actedByUserId        String?            @map("acted_by_user_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  request              MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Restrict)
+
+  @@index([maintenanceRequestId, createdAt])
+  @@map("contact_disclosure_log")
+}
+
+model NotificationTemplate {
+  id               String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId        String                        @map("society_id") @db.Uuid
+  name             String                        @db.VarChar(160)
+  notificationType String                        @map("notification_type") @db.VarChar(120)
+  channel          NotificationChannel
+  language         String                        @default("en") @db.VarChar(16)
+  allowedVariables Json                          @map("allowed_variables")
+  active           Boolean                       @default(true)
+  publishedVersion Int                           @default(0) @map("published_version")
+  createdByUserId  String                        @map("created_by_user_id") @db.Uuid
+  createdAt        DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int                           @default(0)
+  society          Society                       @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  versions         NotificationTemplateVersion[]
+
+  @@unique([societyId, name, channel, language], name: "uk_template_society_name_channel_language")
+  @@index([societyId, notificationType, channel, active])
+  @@map("notification_template")
+}
+
+model NotificationTemplateVersion {
+  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  templateId        String               @map("template_id") @db.Uuid
+  versionNumber     Int                  @map("version_number")
+  subjectTemplate   String?              @map("subject_template") @db.VarChar(300)
+  messageTemplate   String               @map("message_template") @db.Text
+  allowedVariables  Json                 @map("allowed_variables")
+  publishedAt       DateTime             @default(now()) @map("published_at") @db.Timestamptz(6)
+  publishedByUserId String               @map("published_by_user_id") @db.Uuid
+  template          NotificationTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  notifications     Notification[]
+
+  @@unique([templateId, versionNumber], name: "uk_template_version")
+  @@map("notification_template_version")
+}
+
+model NotificationBatch {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId         String                @map("society_id") @db.Uuid
+  name              String                @db.VarChar(180)
+  kind              String                @db.VarChar(80)
+  status            NotificationStatus    @default(DRAFT)
+  criteria          Json                  @default("{}")
+  recipientSnapshot Json                  @default("[]") @map("recipient_snapshot")
+  estimatedCount    Int                   @default(0) @map("estimated_count")
+  processedCount    Int                   @default(0) @map("processed_count")
+  successCount      Int                   @default(0) @map("success_count")
+  failedCount       Int                   @default(0) @map("failed_count")
+  idempotencyKey    String                @unique @map("idempotency_key") @db.VarChar(180)
+  createdByUserId   String                @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int                   @default(0)
+  society           Society               @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  notifications     Notification[]
+  schedule          NotificationSchedule?
+
+  @@index([societyId, status, createdAt])
+  @@map("notification_batch")
+}
+
+model Notification {
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId         String                       @map("society_id") @db.Uuid
+  batchId           String?                      @map("batch_id") @db.Uuid
+  templateVersionId String?                      @map("template_version_id") @db.Uuid
+  announcementId    String?                      @map("announcement_id") @db.Uuid
+  notificationType  String                       @map("notification_type") @db.VarChar(120)
+  priority          NotificationPriority         @default(NORMAL)
+  subject           String?                      @db.VarChar(300)
+  renderedContent   String                       @map("rendered_content") @db.Text
+  relatedType       String?                      @map("related_type") @db.VarChar(100)
+  relatedId         String?                      @map("related_id") @db.VarChar(100)
+  status            NotificationStatus           @default(SCHEDULED)
+  scheduledAt       DateTime?                    @map("scheduled_at") @db.Timestamptz(6)
+  expiresAt         DateTime?                    @map("expires_at") @db.Timestamptz(6)
+  idempotencyKey    String                       @unique @map("idempotency_key") @db.VarChar(180)
+  correlationId     String?                      @map("correlation_id") @db.VarChar(100)
+  createdByUserId   String?                      @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int                          @default(0)
+  society           Society                      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  batch             NotificationBatch?           @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  templateVersion   NotificationTemplateVersion? @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  announcement      Announcement?                @relation(fields: [announcementId], references: [id], onDelete: Restrict)
+  recipients        NotificationRecipient[]
+
+  @@index([societyId, status, scheduledAt])
+  @@index([societyId, notificationType, createdAt])
+  @@map("notification")
+}
+
+model NotificationRecipient {
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  notificationId String                 @map("notification_id") @db.Uuid
+  userId         String                 @map("user_id") @db.Uuid
+  residentId     String?                @map("resident_id") @db.Uuid
+  readStatus     RecipientReadStatus    @default(UNREAD) @map("read_status")
+  readAt         DateTime?              @map("read_at") @db.Timestamptz(6)
+  archivedAt     DateTime?              @map("archived_at") @db.Timestamptz(6)
+  acknowledgedAt DateTime?              @map("acknowledged_at") @db.Timestamptz(6)
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  notification   Notification           @relation(fields: [notificationId], references: [id], onDelete: Restrict)
+  user           UserAccount            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  deliveries     NotificationDelivery[]
+
+  @@unique([notificationId, userId], name: "uk_notification_recipient_user")
+  @@index([userId, readStatus, createdAt])
+  @@map("notification_recipient")
+}
+
+model NotificationDelivery {
+  id                    String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientId           String                          @map("recipient_id") @db.Uuid
+  channel               NotificationChannel
+  destinationMasked     String?                         @map("destination_masked") @db.VarChar(180)
+  status                DeliveryStatus                  @default(QUEUED)
+  retryCount            Int                             @default(0) @map("retry_count")
+  nextAttemptAt         DateTime?                       @map("next_attempt_at") @db.Timestamptz(6)
+  acceptedAt            DateTime?                       @map("accepted_at") @db.Timestamptz(6)
+  deliveredAt           DateTime?                       @map("delivered_at") @db.Timestamptz(6)
+  failureClassification FailureClassification?          @map("failure_classification")
+  failureReason         String?                         @map("failure_reason") @db.VarChar(1000)
+  idempotencyKey        String                          @unique @map("idempotency_key") @db.VarChar(180)
+  createdAt             DateTime                        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version               Int                             @default(0)
+  recipient             NotificationRecipient           @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  attempts              DeliveryAttempt[]
+  providerReferences    NotificationProviderReference[]
+  callbacks             ProviderCallbackEvent[]
+  claims                NotificationJobClaim[]
+
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([channel, status, createdAt])
+  @@map("notification_delivery")
+}
+
+model DeliveryAttempt {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deliveryId            String                 @map("delivery_id") @db.Uuid
+  attemptNumber         Int                    @map("attempt_number")
+  provider              String                 @db.VarChar(80)
+  status                DeliveryStatus
+  failureClassification FailureClassification? @map("failure_classification")
+  safeResponse          String?                @map("safe_response") @db.VarChar(1000)
+  startedAt             DateTime               @map("started_at") @db.Timestamptz(6)
+  completedAt           DateTime?              @map("completed_at") @db.Timestamptz(6)
+  delivery              NotificationDelivery   @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+  @@unique([deliveryId, attemptNumber], name: "uk_delivery_attempt_number")
+  @@map("delivery_attempt")
+}
+
+model NotificationProviderReference {
+  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deliveryId        String               @map("delivery_id") @db.Uuid
+  provider          String               @db.VarChar(80)
+  providerReference String               @map("provider_reference") @db.VarChar(180)
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  delivery          NotificationDelivery @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerReference], name: "uk_provider_reference")
+  @@map("notification_provider_reference")
+}
+
+model NotificationPreference {
+  id                   String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId            String                       @map("society_id") @db.Uuid
+  userId               String                       @unique @map("user_id") @db.Uuid
+  emailEnabled         Boolean                      @default(true) @map("email_enabled")
+  smsEnabled           Boolean                      @default(false) @map("sms_enabled")
+  inAppEnabled         Boolean                      @default(true) @map("in_app_enabled")
+  paymentReminders     Boolean                      @default(true) @map("payment_reminders")
+  generalAnnouncements Boolean                      @default(true) @map("general_announcements")
+  maintenanceUpdates   Boolean                      @default(true) @map("maintenance_updates")
+  complaintUpdates     Boolean                      @default(true) @map("complaint_updates")
+  optionalEvents       Boolean                      @default(true) @map("optional_events")
+  preferredLanguage    String                       @default("en") @map("preferred_language") @db.VarChar(16)
+  quietHoursStart      Int?                         @map("quiet_hours_start")
+  quietHoursEnd        Int?                         @map("quiet_hours_end")
+  createdAt            DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version              Int                          @default(0)
+  society              Society                      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  user                 UserAccount                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  history              ConsentOrPreferenceHistory[]
+
+  @@index([societyId, updatedAt])
+  @@map("notification_preference")
+}
+
+model ConsentOrPreferenceHistory {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  preferenceId    String                 @map("preference_id") @db.Uuid
+  changedByUserId String                 @map("changed_by_user_id") @db.Uuid
+  changes         Json
+  policyBasis     String?                @map("policy_basis") @db.VarChar(500)
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  preference      NotificationPreference @relation(fields: [preferenceId], references: [id], onDelete: Restrict)
+
+  @@index([preferenceId, createdAt])
+  @@map("consent_or_preference_history")
+}
+
+model NotificationSchedule {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId            String            @unique @map("batch_id") @db.Uuid
+  scheduledAt        DateTime          @map("scheduled_at") @db.Timestamptz(6)
+  timeZone           String            @map("time_zone") @db.VarChar(80)
+  cancelledAt        DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+  cancellationReason String?           @map("cancellation_reason") @db.VarChar(500)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  version            Int               @default(0)
+  batch              NotificationBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@index([scheduledAt, cancelledAt])
+  @@map("notification_schedule")
+}
+
+model Announcement {
+  id                     String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId              String                         @map("society_id") @db.Uuid
+  subject                String                         @db.VarChar(300)
+  message                String                         @db.Text
+  category               String                         @db.VarChar(80)
+  priority               NotificationPriority           @default(NORMAL)
+  status                 AnnouncementStatus             @default(DRAFT)
+  channels               Json
+  publishAt              DateTime?                      @map("publish_at") @db.Timestamptz(6)
+  expiresAt              DateTime?                      @map("expires_at") @db.Timestamptz(6)
+  requiresAcknowledgment Boolean                        @default(false) @map("requires_acknowledgment")
+  emergency              Boolean                        @default(false)
+  correctionOfId         String?                        @map("correction_of_id") @db.Uuid
+  createdByUserId        String                         @map("created_by_user_id") @db.Uuid
+  createdAt              DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                Int                            @default(0)
+  society                Society                        @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  audience               AnnouncementAudience?
+  snapshots              AnnouncementAudienceSnapshot[]
+  attachments            AnnouncementAttachment[]
+  notifications          Notification[]
+
+  @@index([societyId, status, publishAt])
+  @@index([societyId, emergency, createdAt])
+  @@map("announcement")
+}
+
+model AnnouncementAudience {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId String       @unique @map("announcement_id") @db.Uuid
+  type           AudienceType
+  criteria       Json         @default("{}")
+  exclusions     Json         @default("[]")
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Restrict)
+
+  @@map("announcement_audience")
+}
+
+model AnnouncementAudienceSnapshot {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId  String       @map("announcement_id") @db.Uuid
+  userId          String       @map("user_id") @db.Uuid
+  residentId      String?      @map("resident_id") @db.Uuid
+  channels        Json
+  exclusionReason String?      @map("exclusion_reason") @db.VarChar(300)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  announcement    Announcement @relation(fields: [announcementId], references: [id], onDelete: Restrict)
+
+  @@unique([announcementId, userId], name: "uk_announcement_snapshot_user")
+  @@index([announcementId, exclusionReason])
+  @@map("announcement_audience_snapshot")
+}
+
+model AnnouncementAttachment {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId   String       @map("announcement_id") @db.Uuid
+  objectKey        String       @unique @map("object_key") @db.VarChar(500)
+  originalFileName String       @map("original_file_name") @db.VarChar(255)
+  mediaType        String       @map("media_type") @db.VarChar(120)
+  sizeBytes        BigInt       @map("size_bytes")
+  checksumSha256   String       @map("checksum_sha256") @db.Char(64)
+  uploadedByUserId String       @map("uploaded_by_user_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  archivedAt       DateTime?    @map("archived_at") @db.Timestamptz(6)
+  announcement     Announcement @relation(fields: [announcementId], references: [id], onDelete: Restrict)
+
+  @@index([announcementId, archivedAt])
+  @@map("announcement_attachment")
+}
+
+model ProviderCallbackEvent {
+  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deliveryId        String               @map("delivery_id") @db.Uuid
+  provider          String               @db.VarChar(80)
+  callbackId        String               @map("callback_id") @db.VarChar(180)
+  providerReference String               @map("provider_reference") @db.VarChar(180)
+  status            DeliveryStatus
+  payloadHash       String               @map("payload_hash") @db.Char(64)
+  receivedAt        DateTime             @default(now()) @map("received_at") @db.Timestamptz(6)
+  delivery          NotificationDelivery @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, callbackId], name: "uk_provider_callback")
+  @@index([providerReference, receivedAt])
+  @@map("provider_callback_event")
+}
+
+model NotificationJobClaim {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deliveryId     String?               @map("delivery_id") @db.Uuid
+  outboxEventId  String?               @map("outbox_event_id") @db.Uuid
+  workerId       String                @map("worker_id") @db.VarChar(100)
+  status         JobClaimStatus        @default(CLAIMED)
+  claimedAt      DateTime              @default(now()) @map("claimed_at") @db.Timestamptz(6)
+  leaseExpiresAt DateTime              @map("lease_expires_at") @db.Timestamptz(6)
+  completedAt    DateTime?             @map("completed_at") @db.Timestamptz(6)
+  safeError      String?               @map("safe_error") @db.VarChar(1000)
+  delivery       NotificationDelivery? @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+  @@index([status, leaseExpiresAt])
+  @@index([deliveryId, claimedAt])
+  @@map("notification_job_claim")
+}
+
+model FinancialSettingPeriod {
+  id                       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId                String             @map("society_id") @db.Uuid
+  defaultMonthlyFee        Decimal            @map("default_monthly_fee") @db.Decimal(18, 2)
+  dueDay                   Int                @map("due_day")
+  gracePeriodDays          Int                @default(0) @map("grace_period_days")
+  lateFeePolicy            Json               @map("late_fee_policy")
+  allocationStrategy       AllocationStrategy @default(OLDEST_DUE_FIRST) @map("allocation_strategy")
+  receiptPrefix            String             @map("receipt_prefix") @db.VarChar(20)
+  receiptSequenceStart     Int                @default(1) @map("receipt_sequence_start")
+  paymentInstructions      String?            @map("payment_instructions") @db.Text
+  supportedPaymentMethods  Json               @map("supported_payment_methods")
+  bankTransferInstructions String?            @map("bank_transfer_instructions") @db.Text
+  advancePaymentPolicy     Json               @map("advance_payment_policy")
+  refundAndReversalPolicy  Json               @map("refund_and_reversal_policy")
+  currency                 String             @db.Char(3)
+  roundingScale            Int                @default(2) @map("rounding_scale")
+  effectiveFrom            DateTime           @map("effective_from") @db.Date
+  effectiveTo              DateTime?          @map("effective_to") @db.Date
+  archivedAt               DateTime?          @map("archived_at") @db.Timestamptz(6)
+  createdByUserId          String             @map("created_by_user_id") @db.Uuid
+  createdAt                DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                  Int                @default(0)
+  society                  Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  createdBy                UserAccount        @relation("FinancialSettingCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([societyId, effectiveFrom], name: "uk_financial_setting_society_start")
+  @@index([societyId, archivedAt, effectiveFrom, effectiveTo])
+  @@map("financial_setting_period")
+}
+
+model ProfileCorrectionRequest {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId         String                  @map("society_id") @db.Uuid
+  residentId        String                  @map("resident_id") @db.Uuid
+  requestedByUserId String                  @map("requested_by_user_id") @db.Uuid
+  requestType       String                  @map("request_type") @db.VarChar(80)
+  requestedChanges  Json                    @map("requested_changes")
+  reason            String                  @db.VarChar(1000)
+  status            ProfileCorrectionStatus @default(PENDING)
+  resolutionNote    String?                 @map("resolution_note") @db.VarChar(1000)
+  resolvedByUserId  String?                 @map("resolved_by_user_id") @db.Uuid
+  resolvedAt        DateTime?               @map("resolved_at") @db.Timestamptz(6)
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int                     @default(0)
+  society           Society                 @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident          Resident                @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  requestedBy       UserAccount             @relation("ProfileCorrectionRequester", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  resolvedBy        UserAccount?            @relation("ProfileCorrectionResolver", fields: [resolvedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, status, createdAt])
+  @@index([residentId, createdAt])
+  @@map("profile_correction_request")
+}
