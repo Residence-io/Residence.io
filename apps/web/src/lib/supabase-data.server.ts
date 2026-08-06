@@ -68,6 +68,8 @@ export async function fetchResidents(societyId?: string) {
 
 export async function fetchResident(id: string) {
   const supabase = await getClient();
+
+  // Fetch resident + occupancies in one query (same RLS policy: RESIDENT_READ)
   const { data, error } = await supabase
     .from('resident')
     .select(
@@ -79,10 +81,7 @@ export async function fetchResident(id: string) {
           *,
           property(*)
         )
-      ),
-      idCards:resident_id_card(*),
-      vehicles:vehicle(*),
-      documents:resident_document(*)
+      )
     `,
     )
     .eq('id', id)
@@ -91,8 +90,21 @@ export async function fetchResident(id: string) {
 
   const raw = data as any;
 
-  // profilePhotograph comes from the resident_document table (category = PROFILE_PHOTOGRAPH)
-  // or from the profile_photograph_object_key column on the resident row itself
+  // Fetch related tables independently — RLS may block some; that's OK
+  const [idCardsResult, vehiclesResult, documentsResult] = await Promise.all([
+    supabase.from('resident_id_card').select('*').eq('resident_id', id),
+    supabase.from('vehicle').select('*').eq('resident_id', id),
+    supabase.from('resident_document').select('*').eq('resident_id', id),
+  ]);
+
+  raw.idCards = (idCardsResult.data ?? []).map((c: any) => ({
+    ...c,
+    issuedAt: c.issuedAt ?? c.issued_at,
+  }));
+  raw.vehicles = vehiclesResult.data ?? [];
+  raw.documents = documentsResult.data ?? [];
+
+  // profilePhotograph: from document or profile_photograph_object_key column
   const photoDoc = (raw.documents ?? []).find(
     (d: any) => d.category === 'PROFILE_PHOTOGRAPH' && d.status === 'ACTIVE',
   );
@@ -105,8 +117,8 @@ export async function fetchResident(id: string) {
         }
       : null;
 
-  // Normalize camelCase fields from snake_case
-  const normalize = (occ: any) => ({
+  // Normalize camelCase fields from snake_case for occupancies
+  raw.occupancies = (raw.occupancies ?? []).map((occ: any) => ({
     ...occ,
     endDate: occ.endDate ?? occ.end_date ?? null,
     unit: occ.unit
@@ -123,15 +135,7 @@ export async function fetchResident(id: string) {
             : null,
         }
       : null,
-  });
-
-  raw.occupancies = (raw.occupancies ?? []).map(normalize);
-  raw.idCards = (raw.idCards ?? []).map((c: any) => ({
-    ...c,
-    issuedAt: c.issuedAt ?? c.issued_at,
   }));
-  raw.vehicles = raw.vehicles ?? [];
-  raw.documents = raw.documents ?? [];
 
   return raw as ApiResident;
 }
