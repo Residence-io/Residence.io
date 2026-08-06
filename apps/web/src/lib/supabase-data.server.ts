@@ -81,25 +81,29 @@ export async function fetchResident(id: string) {
         )
       ),
       idCards:resident_id_card(*),
-      vehicles:resident_vehicle(*),
-      documents:resident_document(*),
-      profilePhotograph:resident_photograph(*)
+      vehicles:vehicle(*),
+      documents:resident_document(*)
     `,
     )
     .eq('id', id)
     .single();
   if (error) throw new Error(error.message);
 
-  // Normalize profilePhotograph: pick the latest one if array
   const raw = data as any;
-  if (Array.isArray(raw.profilePhotograph)) {
-    raw.profilePhotograph =
-      raw.profilePhotograph.sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt ?? b.created_at).getTime() -
-          new Date(a.createdAt ?? a.created_at).getTime(),
-      )[0] ?? null;
-  }
+
+  // profilePhotograph comes from the resident_document table (category = PROFILE_PHOTOGRAPH)
+  // or from the profile_photograph_object_key column on the resident row itself
+  const photoDoc = (raw.documents ?? []).find(
+    (d: any) => d.category === 'PROFILE_PHOTOGRAPH' && d.status === 'ACTIVE',
+  );
+  raw.profilePhotograph = photoDoc
+    ? { ...photoDoc, createdAt: photoDoc.created_at }
+    : raw.profile_photograph_object_key
+      ? {
+          objectKey: raw.profile_photograph_object_key,
+          createdAt: raw.updated_at,
+        }
+      : null;
 
   // Normalize camelCase fields from snake_case
   const normalize = (occ: any) => ({

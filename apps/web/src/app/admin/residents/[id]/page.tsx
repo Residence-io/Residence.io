@@ -25,7 +25,11 @@ export default async function ResidentDetailPage({
   let resident: ResidentDetail;
   try {
     resident = (await fetchResident(id)) as any;
-  } catch {
+  } catch (err: any) {
+    console.error(
+      '[ResidentDetailPage] fetchResident error:',
+      err?.message ?? err,
+    );
     notFound();
   }
   const user = await getCurrentUser();
