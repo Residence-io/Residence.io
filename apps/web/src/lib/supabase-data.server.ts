@@ -70,7 +70,8 @@ export async function fetchResident(id: string) {
   const supabase = await getClient();
   const { data, error } = await supabase
     .from('resident')
-    .select(`
+    .select(
+      `
       *,
       occupancies:resident_occupancy(
         *,
@@ -83,7 +84,8 @@ export async function fetchResident(id: string) {
       vehicles:resident_vehicle(*),
       documents:resident_document(*),
       profilePhotograph:resident_photograph(*)
-    `)
+    `,
+    )
     .eq('id', id)
     .single();
   if (error) throw new Error(error.message);
@@ -91,11 +93,12 @@ export async function fetchResident(id: string) {
   // Normalize profilePhotograph: pick the latest one if array
   const raw = data as any;
   if (Array.isArray(raw.profilePhotograph)) {
-    raw.profilePhotograph = raw.profilePhotograph.sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt ?? b.created_at).getTime() -
-        new Date(a.createdAt ?? a.created_at).getTime(),
-    )[0] ?? null;
+    raw.profilePhotograph =
+      raw.profilePhotograph.sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt ?? b.created_at).getTime() -
+          new Date(a.createdAt ?? a.created_at).getTime(),
+      )[0] ?? null;
   }
 
   // Normalize camelCase fields from snake_case
