@@ -23,14 +23,33 @@ export default async function ResidentDetailPage({
   const { id } = await params;
   const notice = await searchParams;
   let resident: ResidentDetail;
+  let fetchError: string | null = null;
   try {
     resident = (await fetchResident(id)) as any;
   } catch (err: any) {
-    console.error(
-      '[ResidentDetailPage] fetchResident error:',
-      err?.message ?? err,
+    fetchError = err?.message ?? String(err);
+  }
+
+  if (fetchError || !resident!) {
+    return (
+      <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
+        <h2 style={{ color: 'red' }}>⚠️ Resident Load Error</h2>
+        <p>
+          <strong>ID:</strong> {id}
+        </p>
+        <pre
+          style={{
+            background: '#fee',
+            padding: '1rem',
+            borderRadius: '8px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {fetchError ?? 'Unknown error — resident data is null'}
+        </pre>
+      </div>
     );
-    notFound();
   }
   const user = await getCurrentUser();
   const activeOccupancy = resident.occupancies.find((item) => !item.endDate);
