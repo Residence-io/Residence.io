@@ -69,13 +69,64 @@ export async function fetchResidents(societyId?: string) {
 export async function fetchResident(id: string) {
   const supabase = await getClient();
   const { data, error } = await supabase
-
     .from('resident')
-    .select('*')
+    .select(`
+      *,
+      occupancies:resident_occupancy(
+        *,
+        unit(
+          *,
+          property(*)
+        )
+      ),
+      idCards:resident_id_card(*),
+      vehicles:resident_vehicle(*),
+      documents:resident_document(*),
+      profilePhotograph:resident_photograph(*)
+    `)
     .eq('id', id)
     .single();
   if (error) throw new Error(error.message);
-  return data as ApiResident;
+
+  // Normalize profilePhotograph: pick the latest one if array
+  const raw = data as any;
+  if (Array.isArray(raw.profilePhotograph)) {
+    raw.profilePhotograph = raw.profilePhotograph.sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt ?? b.created_at).getTime() -
+        new Date(a.createdAt ?? a.created_at).getTime(),
+    )[0] ?? null;
+  }
+
+  // Normalize camelCase fields from snake_case
+  const normalize = (occ: any) => ({
+    ...occ,
+    endDate: occ.endDate ?? occ.end_date ?? null,
+    unit: occ.unit
+      ? {
+          ...occ.unit,
+          unitNumber: occ.unit.unitNumber ?? occ.unit.unit_number,
+          property: occ.unit.property
+            ? {
+                ...occ.unit.property,
+                propertyNumber:
+                  occ.unit.property.propertyNumber ??
+                  occ.unit.property.property_number,
+              }
+            : null,
+        }
+      : null,
+  });
+
+  raw.occupancies = (raw.occupancies ?? []).map(normalize);
+  raw.idCards = (raw.idCards ?? []).map((c: any) => ({
+    ...c,
+    issuedAt: c.issuedAt ?? c.issued_at,
+  }));
+  raw.vehicles = raw.vehicles ?? [];
+  raw.documents = raw.documents ?? [];
+
+  return raw as ApiResident;
 }
 
 // ─── Properties ───────────────────────────────────────────────────────────────
