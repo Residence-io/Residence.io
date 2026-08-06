@@ -74,7 +74,7 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
     if (path === 'residents' && req.method === 'POST') {
       // Basic insert
       const { data, error } = await supabase
-        .from('residents')
+        .from('resident')
         .insert(body)
         .select()
         .single();
@@ -130,7 +130,7 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       const id = params.proxy[1];
       const status = params.proxy[3]; // e.g. ACTIVE
       const { data, error } = await supabase
-        .from('residents')
+        .from('resident')
         .update({ status })
         .eq('id', id)
         .select()

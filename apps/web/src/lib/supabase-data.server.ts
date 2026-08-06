@@ -70,7 +70,7 @@ export async function fetchResident(id: string) {
   const supabase = await getClient();
   const { data, error } = await supabase
 
-    .from('residents')
+    .from('resident')
     .select('*')
     .eq('id', id)
     .single();
