@@ -52,24 +52,63 @@ export default async function ResidentDetailPage({
     );
   }
   const user = await getCurrentUser();
-  const activeOccupancy = resident.occupancies.find((item) => !item.endDate);
-  const activeCard = resident.idCards.find((card) => card.status === 'ACTIVE');
-  const activeVehicles = resident.vehicles.filter((vehicle) => vehicle.active);
-  const houseNumber = activeOccupancy
-    ? activeOccupancy.unit.unitNumber ===
-      activeOccupancy.unit.property.propertyNumber
-      ? activeOccupancy.unit.property.propertyNumber
-      : `${activeOccupancy.unit.property.propertyNumber}/${activeOccupancy.unit.unitNumber}`
-    : 'No active house';
-  const cardOutdated = Boolean(
-    activeCard &&
-    resident.profilePhotograph &&
-    new Date(resident.profilePhotograph.createdAt) >
-      new Date(activeCard.issuedAt),
-  );
-  const photographVersion = encodeURIComponent(
-    resident.profilePhotograph?.createdAt ?? 'none',
-  );
+
+  let activeOccupancy: any;
+  let activeCard: any;
+  let activeVehicles: any[] = [];
+  let houseNumber = 'No active house';
+  let cardOutdated = false;
+  let photographVersion = 'none';
+  let processingError: string | null = null;
+
+  try {
+    activeOccupancy = (resident.occupancies ?? []).find(
+      (item: any) => !item.endDate,
+    );
+    activeCard = (resident.idCards ?? []).find(
+      (card: any) => card.status === 'ACTIVE',
+    );
+    activeVehicles = (resident.vehicles ?? []).filter(
+      (vehicle: any) => vehicle.active,
+    );
+    houseNumber = activeOccupancy
+      ? activeOccupancy.unit?.unitNumber ===
+        activeOccupancy.unit?.property?.propertyNumber
+        ? activeOccupancy.unit?.property?.propertyNumber
+        : `${activeOccupancy.unit?.property?.propertyNumber ?? ''}/${activeOccupancy.unit?.unitNumber ?? ''}`
+      : 'No active house';
+    cardOutdated = Boolean(
+      activeCard &&
+      resident.profilePhotograph &&
+      new Date(resident.profilePhotograph.createdAt) >
+        new Date(activeCard.issuedAt),
+    );
+    photographVersion = encodeURIComponent(
+      resident.profilePhotograph?.createdAt ?? 'none',
+    );
+  } catch (err: any) {
+    processingError = `Processing error: ${err?.message ?? String(err)} | occupancies=${JSON.stringify(resident.occupancies)} | idCards=${JSON.stringify(resident.idCards)}`;
+  }
+
+  if (processingError) {
+    return (
+      <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
+        <h2 style={{ color: 'orange' }}>⚠️ Data Processing Error</h2>
+        <pre
+          style={{
+            background: '#ffd',
+            padding: '1rem',
+            borderRadius: '8px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {processingError}
+        </pre>
+      </div>
+    );
+  }
+
   const permissions = new Set(user?.permissions ?? []);
   const canUpdate = permissions.has('RESIDENT_UPDATE');
   const canManageStatus = permissions.has('RESIDENT_STATUS_CHANGE');
