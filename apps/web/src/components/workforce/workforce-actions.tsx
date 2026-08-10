@@ -123,103 +123,164 @@ export function StaffRegistrationForm({
 }) {
   const action = useAction(csrfToken);
   const router = useRouter();
+  const [selectedDeptId, setSelectedDeptId] = useState(
+    departments[0]?.id ?? '',
+  );
+  const selectedDept = departments.find((d) => d.id === selectedDeptId);
+  const jobTitles = selectedDept?.jobTitles?.filter((j) => j.active) ?? [];
+
   return (
     <form
-      className="grid gap-3 md:grid-cols-2"
+      className="space-y-6"
       onSubmit={(event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
         void action
           .submit('/workforce/staff', {
             fullName: data.get('fullName'),
-            guardianName: data.get('guardianName') || undefined,
             identityNumber: data.get('identityNumber') || undefined,
             email: data.get('email') || undefined,
             primaryPhone: data.get('primaryPhone'),
-            alternatePhone: data.get('alternatePhone') || undefined,
             address: data.get('address') || undefined,
             departmentId: data.get('departmentId'),
             jobTitleId: data.get('jobTitleId'),
             employmentType: data.get('employmentType'),
             joiningDate: data.get('joiningDate'),
-            probationEndDate: data.get('probationEndDate') || undefined,
-            workShift: data.get('workShift') || undefined,
-            paymentMethod: data.get('paymentMethod'),
           })
           .then((result) => {
             if (result?.id) router.push(`/admin/staff/${result.id}`);
           });
       }}
     >
-      <input
-        className={input}
-        name="fullName"
-        placeholder="Full name"
-        required
-      />
-      <input
-        className={input}
-        name="guardianName"
-        placeholder="Parent, spouse, or guardian"
-      />
-      <input
-        className={input}
-        name="identityNumber"
-        placeholder="Identity number"
-      />
-      <input className={input} name="email" type="email" placeholder="Email" />
-      <input
-        className={input}
-        name="primaryPhone"
-        placeholder="Primary phone"
-        required
-      />
-      <input
-        className={input}
-        name="alternatePhone"
-        placeholder="Alternate phone"
-      />
-      <input className={input} name="address" placeholder="Address" />
-      <select className={input} name="departmentId" required>
-        {departments
-          .filter((d) => d.active)
-          .map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-      </select>
-      <select className={input} name="jobTitleId" required>
-        {departments.flatMap((d) =>
-          d.jobTitles
-            .filter((j) => j.active)
-            .map((j) => (
-              <option key={j.id} value={j.id}>
-                {d.name} — {j.name}
-              </option>
-            )),
+      {/* Personal Information */}
+      <div>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
+          Personal Information
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Full Name <span className="text-red-500">*</span>
+            </span>
+            <input
+              className={input}
+              name="fullName"
+              placeholder="e.g. Ahmed Khan"
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              CNIC / Identity Number
+            </span>
+            <input
+              className={input}
+              name="identityNumber"
+              placeholder="e.g. 3520112345671"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Phone <span className="text-red-500">*</span>
+            </span>
+            <input
+              className={input}
+              name="primaryPhone"
+              placeholder="e.g. 0300-1234567"
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Email
+            </span>
+            <input
+              className={input}
+              name="email"
+              type="email"
+              placeholder="e.g. ahmed@example.com"
+            />
+          </label>
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Address
+            </span>
+            <input
+              className={input}
+              name="address"
+              placeholder="Residential address"
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Employment Details */}
+      <div>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
+          Employment Details
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Department <span className="text-red-500">*</span>
+            </span>
+            <select
+              className={input}
+              name="departmentId"
+              required
+              value={selectedDeptId}
+              onChange={(e) => setSelectedDeptId(e.target.value)}
+            >
+              <option value="">Select department</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Job Title <span className="text-red-500">*</span>
+            </span>
+            <select className={input} name="jobTitleId" required>
+              <option value="">Select job title</option>
+              {jobTitles.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Employment Type <span className="text-red-500">*</span>
+            </span>
+            <select className={input} name="employmentType" required>
+              <option value="PERMANENT">Permanent</option>
+              <option value="CONTRACT">Contract</option>
+              <option value="PART_TIME">Part-time</option>
+              <option value="TEMPORARY">Temporary</option>
+              <option value="DAILY_WAGE">Daily Wage</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">
+              Joining Date <span className="text-red-500">*</span>
+            </span>
+            <input className={input} name="joiningDate" type="date" required />
+          </label>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 pt-2">
+        <Button disabled={action.busy} className="px-8">
+          {action.busy ? 'Registering…' : 'Register Staff Member'}
+        </Button>
+        {action.message && (
+          <p className="text-sm text-slate-600">{action.message}</p>
         )}
-      </select>
-      <select className={input} name="employmentType">
-        <option>PERMANENT</option>
-        <option>CONTRACT</option>
-        <option>PART_TIME</option>
-        <option>TEMPORARY</option>
-        <option>DAILY_WAGE</option>
-        <option>OTHER</option>
-      </select>
-      <input className={input} name="joiningDate" type="date" required />
-      <input className={input} name="probationEndDate" type="date" />
-      <input className={input} name="workShift" placeholder="Work shift" />
-      <select className={input} name="paymentMethod">
-        <option>CASH</option>
-        <option>BANK_TRANSFER</option>
-        <option>CHEQUE</option>
-        <option>DIGITAL_TRANSFER</option>
-        <option>OTHER</option>
-      </select>
-      <Button disabled={action.busy}>Register staff member</Button>
-      {action.message && <p className="text-sm">{action.message}</p>}
+      </div>
     </form>
   );
 }
