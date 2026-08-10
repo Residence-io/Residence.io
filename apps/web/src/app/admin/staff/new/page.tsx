@@ -3,12 +3,40 @@ import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { StaffRegistrationForm } from '@/components/workforce/workforce-actions';
 import { getCurrentUser } from '@/lib/api.server';
-import type { Department } from '@/lib/workforce-types';
+
 export default async function NewStaffPage() {
-  const [user, departments] = await Promise.all([
-    getCurrentUser(),
-    fetchDepartments(),
-  ]);
+  let user = null;
+  let departments: any[] = [];
+  let pageError: string | null = null;
+
+  try {
+    [user, departments] = await Promise.all([
+      getCurrentUser(),
+      fetchDepartments(),
+    ]);
+  } catch (err: any) {
+    pageError = err?.message ?? String(err);
+  }
+
+  if (pageError) {
+    return (
+      <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
+        <h2 style={{ color: 'red' }}>⚠️ Staff Registration Load Error</h2>
+        <pre
+          style={{
+            background: '#fee',
+            padding: '1rem',
+            borderRadius: '8px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {pageError}
+        </pre>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-7">
       <PageHeader
@@ -20,7 +48,7 @@ export default async function NewStaffPage() {
         {user && (
           <StaffRegistrationForm
             csrfToken={user.csrfToken}
-            departments={departments}
+            departments={departments as any}
           />
         )}
       </Card>
