@@ -11,7 +11,7 @@ export default async function ResidentDetailPage({
   let occupancyData: any[] = [];
   let idCardData: any[] = [];
   let vehicleData: any[] = [];
-  let errors: Record<string, string> = {};
+  const errors: Record<string, string> = {};
 
   try {
     const supabase = await createSupabaseServerClient();

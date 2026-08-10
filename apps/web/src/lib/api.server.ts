@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import 'server-only';
 import type { AuthenticatedUser } from '@residence/shared';
 import { createSupabaseServerClient } from './supabase.server';
