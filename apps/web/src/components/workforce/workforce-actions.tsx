@@ -127,12 +127,22 @@ export function StaffRegistrationForm({
   const action = useAction(csrfToken);
   const router = useRouter();
 
+  // ── shared society id (from any existing department) ────────────────────
+  const societyId = departments[0]?.societyId ?? '';
+
   // ── Department & Job Title state ──────────────────────────────────────────
   const [selectedDeptId, setSelectedDeptId] = useState(
     departments[0]?.id ?? '',
   );
-  // Local job titles state — starts from server data, updated instantly on add/delete
   const [localDepts, setLocalDepts] = useState<DeptWithSociety[]>(departments);
+
+  // Department manager
+  const [managingDepts, setManagingDepts] = useState(false);
+  const [newDeptName, setNewDeptName] = useState('');
+  const [deptBusy, setDeptBusy] = useState(false);
+  const [deptError, setDeptError] = useState('');
+
+  // Job title manager
   const [managingTitles, setManagingTitles] = useState(false);
   const [newTitleName, setNewTitleName] = useState('');
   const [titleBusy, setTitleBusy] = useState(false);
@@ -141,6 +151,69 @@ export function StaffRegistrationForm({
   const selectedDept = localDepts.find((d) => d.id === selectedDeptId);
   const jobTitles = (selectedDept?.jobTitles ?? []).filter((j) => j.active);
 
+  // ── Department add / delete ───────────────────────────────────────────────
+  async function addDepartment() {
+    if (!newDeptName.trim()) return;
+    setDeptBusy(true);
+    setDeptError('');
+    try {
+      const res = await fetch(`${API_URL}/department`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'content-type': 'application/json',
+          'x-csrf-token': csrfToken,
+        },
+        body: JSON.stringify({
+          society_id: societyId,
+          name: newDeptName.trim(),
+          normalized_name: newDeptName.trim().toUpperCase(),
+          active: true,
+          display_order: localDepts.length,
+          updated_at: new Date().toISOString(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Failed to add department');
+      setLocalDepts((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          societyId,
+          name: newDeptName.trim(),
+          active: true,
+          description: null,
+          jobTitles: [],
+        },
+      ]);
+      setNewDeptName('');
+    } catch (e: any) {
+      setDeptError(e.message);
+    } finally {
+      setDeptBusy(false);
+    }
+  }
+
+  async function deleteDepartment(deptId: string) {
+    setDeptBusy(true);
+    setDeptError('');
+    try {
+      const res = await fetch(`${API_URL}/department/${deptId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'x-csrf-token': csrfToken },
+      });
+      if (!res.ok) throw new Error('Failed to delete department');
+      setLocalDepts((prev) => prev.filter((d) => d.id !== deptId));
+      if (selectedDeptId === deptId) setSelectedDeptId('');
+    } catch (e: any) {
+      setDeptError(e.message);
+    } finally {
+      setDeptBusy(false);
+    }
+  }
+
+  // ── Job title add / delete ────────────────────────────────────────────────
   function updateDeptTitles(
     deptId: string,
     updater: (t: JobTitle[]) => JobTitle[],
@@ -298,10 +371,22 @@ export function StaffRegistrationForm({
           Employment Details
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
-              Department <span className="text-red-500">*</span>
-            </span>
+          <div className="block">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">
+                Department <span className="text-red-500">*</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setManagingDepts((v) => !v);
+                  setManagingTitles(false);
+                }}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800"
+              >
+                {managingDepts ? '✕ Close' : '⚙ Manage departments'}
+              </button>
+            </div>
             <select
               className={input}
               name="departmentId"
@@ -320,8 +405,66 @@ export function StaffRegistrationForm({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
+        </div>
 
+        {/* ── Inline Department Manager ────────────────────────────────────── */}
+        {managingDepts && (
+          <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-emerald-700">
+              Departments
+            </p>
+            {localDepts.length === 0 ? (
+              <p className="mb-3 text-sm text-slate-500">No departments yet.</p>
+            ) : (
+              <ul className="mb-3 space-y-1">
+                {localDepts.map((d) => (
+                  <li
+                    key={d.id}
+                    className="flex items-center justify-between rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm"
+                  >
+                    <span className="font-medium text-slate-800">{d.name}</span>
+                    <button
+                      type="button"
+                      disabled={deptBusy}
+                      onClick={() => deleteDepartment(d.id)}
+                      className="ml-3 rounded px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2">
+              <input
+                className="flex-1 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                placeholder="New department name…"
+                value={newDeptName}
+                onChange={(e) => setNewDeptName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void addDepartment();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                disabled={deptBusy || !newDeptName.trim()}
+                onClick={() => void addDepartment()}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
+              >
+                {deptBusy ? '…' : '+ Add'}
+              </button>
+            </div>
+            {deptError && (
+              <p className="mt-2 text-xs text-red-600">{deptError}</p>
+            )}
+          </div>
+        )}
+
+        <div className="mt-3 grid gap-4 md:grid-cols-2">
           {/* Job Title + Manage button */}
           <div className="block">
             <div className="mb-1 flex items-center justify-between">
