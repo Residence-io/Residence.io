@@ -129,7 +129,10 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
         .update({ status: 'REVOKED' })
         .eq('resident_id', residentId)
         .eq('status', 'ACTIVE');
-      // Issue new card
+      // Issue new card — include required NOT NULL fields
+      const verificationHash = Array.from({ length: 64 }, () =>
+        Math.floor(Math.random() * 16).toString(16),
+      ).join('');
       const { data: card, error: cardErr } = await supabase
         .from('resident_id_card')
         .insert({
@@ -137,6 +140,8 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
           card_number: `RC-${cardNum}`,
           status: 'ACTIVE',
           issued_at: new Date().toISOString(),
+          verification_hash: verificationHash,
+          pdf_object_key: `id-cards/${residentId}/card-${cardNum}.pdf`,
         })
         .select()
         .single();

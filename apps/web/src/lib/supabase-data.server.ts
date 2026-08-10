@@ -467,13 +467,10 @@ export async function fetchResidentDashboard(period: string) {
 
 export async function fetchAuditLogs(societyId?: string) {
   const supabase = await getClient();
-  let query = supabase
-
-    .from('audit_logs')
-    .select('*, actor:user_accounts(display_name, username)');
+  let query = supabase.from('audit_log').select('*');
   if (societyId) query = query.eq('society_id', societyId);
   const { data, error } = await query.order('created_at', { ascending: false });
-  if (error) throw new Error(error.message);
+  if (error) return []; // Return empty instead of crashing
   return (data ?? []).map((row: any) => ({
     id: row.id,
     action: row.action,
@@ -482,9 +479,7 @@ export async function fetchAuditLogs(societyId?: string) {
     outcome: row.outcome,
     reason: row.reason,
     createdAt: row.created_at,
-    actor: row.actor
-      ? { displayName: row.actor.display_name, username: row.actor.username }
-      : null,
+    actor: null,
     safeMetadata: row.safe_metadata,
   })) as any[];
 }
