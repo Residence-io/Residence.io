@@ -133,7 +133,6 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       const { data: card, error: cardErr } = await supabase
         .from('resident_id_card')
         .insert({
-          society_id: sid,
           resident_id: residentId,
           card_number: `RC-${cardNum}`,
           status: 'ACTIVE',
