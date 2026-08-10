@@ -109,7 +109,10 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
         society_id = jtRow?.society_id ?? null;
       }
 
-      if (!society_id) throw new Error('Could not determine society. Please ensure at least one department exists.');
+      if (!society_id)
+        throw new Error(
+          'Could not determine society. Please ensure at least one department exists.',
+        );
 
       // Derive identity_last_four from CNIC digits
       const idDigits = String(identityDocumentNumber ?? '').replace(/\D/g, '');
