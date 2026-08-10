@@ -37,8 +37,11 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
   const path = params.proxy.join('/');
 
   try {
+    const contentType = req.headers.get('content-type') ?? '';
+    const isMultipart = contentType.includes('multipart/form-data');
+
     const body =
-      req.method !== 'GET' && req.method !== 'DELETE'
+      req.method !== 'GET' && req.method !== 'DELETE' && !isMultipart
         ? await req.json().catch(() => ({}))
         : null;
 
@@ -68,6 +71,79 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       });
       if (error) throw error;
       return NextResponse.json({ success: true });
+    }
+
+    // --- Photo upload: POST /api/residents/{id}/documents ---
+    if (
+      isMultipart &&
+      req.method === 'POST' &&
+      params.proxy[0] === 'residents' &&
+      params.proxy[2] === 'documents' &&
+      params.proxy.length === 3
+    ) {
+      const residentId = params.proxy[1];
+      const form = await req.formData();
+      const file = form.get('file') as File;
+      if (!file || file.size === 0)
+        return NextResponse.json(
+          { message: 'No file provided.' },
+          { status: 400 },
+        );
+      const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase();
+      const objectKey = `residents/${residentId}/profile-photo.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('resident-documents')
+        .upload(objectKey, file, { contentType: file.type, upsert: true });
+      if (upErr) throw upErr;
+      await supabase
+        .from('resident')
+        .update({
+          profile_photograph_object_key: objectKey,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', residentId);
+      return NextResponse.json({ success: true });
+    }
+
+    // --- ID card: POST /api/residents/{id}/id-card ---
+    if (
+      req.method === 'POST' &&
+      params.proxy[0] === 'residents' &&
+      params.proxy[2] === 'id-card' &&
+      params.proxy.length === 3
+    ) {
+      const residentId = params.proxy[1];
+      const { data: dRow } = await supabase
+        .from('department')
+        .select('society_id')
+        .limit(1)
+        .maybeSingle();
+      const sid = dRow?.society_id;
+      const { count: cardCount } = await supabase
+        .from('resident_id_card')
+        .select('*', { count: 'exact', head: true });
+      const cardNum = ((cardCount ?? 0) + 1).toString().padStart(4, '0');
+      // Revoke existing active cards
+      await supabase
+        .from('resident_id_card')
+        .update({ status: 'REVOKED', updated_at: new Date().toISOString() })
+        .eq('resident_id', residentId)
+        .eq('status', 'ACTIVE');
+      // Issue new card
+      const { data: card, error: cardErr } = await supabase
+        .from('resident_id_card')
+        .insert({
+          society_id: sid,
+          resident_id: residentId,
+          card_number: `RC-${cardNum}`,
+          status: 'ACTIVE',
+          issued_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (cardErr) throw cardErr;
+      return NextResponse.json({ card });
     }
 
     // --- Residents — full registration ---
