@@ -70,16 +70,123 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       return NextResponse.json({ success: true });
     }
 
-    // --- Residents ---
+    // --- Residents — full registration ---
     if (path === 'residents' && req.method === 'POST') {
-      // Basic insert
-      const { data, error } = await supabase
+      const {
+        fullName,
+        dateOfBirth,
+        gender,
+        email,
+        primaryPhone,
+        alternatePhone,
+        identityDocumentNumber,
+        emergencyContactPhone,
+        householdSize,
+        unitId,
+        unitSearch, // typed address (may be new)
+        occupancyType,
+        moveInDate,
+        monthlyFee,
+        account: _account, // ignored here — account creation handled separately
+      } = body;
+
+      // Get society_id from user's account
+      const { data: ua } = await supabase
+        .from('user_account')
+        .select('society_id')
+        .eq('auth_id', user?.id)
+        .single();
+      const society_id = ua?.society_id;
+      if (!society_id) throw new Error('Society not found for this user.');
+
+      // Derive identity_last_four from CNIC digits
+      const idDigits = String(identityDocumentNumber ?? '').replace(/\D/g, '');
+      const identity_last_four =
+        idDigits.length >= 4 ? idDigits.slice(-4) : null;
+
+      // 1. Insert resident
+      const { data: resident, error: re } = await supabase
         .from('resident')
-        .insert(body)
+        .insert({
+          society_id,
+          full_name: fullName,
+          normalized_full_name: String(fullName ?? '').toUpperCase(),
+          date_of_birth: dateOfBirth || null,
+          gender: gender || null,
+          email: email || null,
+          primary_phone: primaryPhone,
+          alternate_phone: alternatePhone || null,
+          emergency_contact_phone: emergencyContactPhone || null,
+          household_size: Number(householdSize) || 1,
+          identity_last_four,
+          status: 'ACTIVE',
+          updated_at: new Date().toISOString(),
+        })
         .select()
         .single();
-      if (error) throw error;
-      return NextResponse.json(data);
+      if (re) throw re;
+
+      // 2. Resolve unit — use existing unitId or create a new property+unit
+      let resolvedUnitId = unitId || null;
+      if (!resolvedUnitId && unitSearch) {
+        // Create a minimal property + unit from typed address
+        const { data: prop } = await supabase
+          .from('property')
+          .insert({
+            society_id,
+            property_number: String(unitSearch),
+            block: '',
+            type: 'RESIDENTIAL',
+            status: 'OCCUPIED',
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        if (prop?.id) {
+          const { data: unit } = await supabase
+            .from('unit')
+            .insert({
+              society_id,
+              property_id: prop.id,
+              unit_number: String(unitSearch),
+              status: 'OCCUPIED',
+              updated_at: new Date().toISOString(),
+            })
+            .select('id')
+            .single();
+          resolvedUnitId = unit?.id ?? null;
+        }
+      }
+
+      // 3. Create occupancy
+      if (resolvedUnitId) {
+        await supabase.from('resident_occupancy').insert({
+          society_id,
+          resident_id: resident.id,
+          unit_id: resolvedUnitId,
+          occupancy_type: occupancyType || 'OWNER',
+          start_date: moveInDate || new Date().toISOString().split('T')[0],
+          status: 'ACTIVE',
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      // 4. Create monthly due if fee provided
+      if (monthlyFee && Number(monthlyFee) > 0) {
+        await supabase
+          .from('monthly_due')
+          .insert({
+            society_id,
+            resident_id: resident.id,
+            amount: Number(monthlyFee),
+            status: 'PENDING',
+            due_date: new Date().toISOString().split('T')[0],
+            updated_at: new Date().toISOString(),
+          })
+          .select();
+      }
+
+      return NextResponse.json({ resident });
     }
 
     // Generic REST to PostgREST proxy mapping
