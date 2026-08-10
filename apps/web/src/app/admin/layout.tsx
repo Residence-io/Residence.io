@@ -11,7 +11,6 @@ const adminRoles = [
 const baseNavigation = [
   { label: 'Dashboard', href: '/admin/dashboard', available: true },
   { label: 'Residents', href: '/admin/residents', available: true },
-  { label: 'Properties', href: '/admin/properties', available: true },
   { label: 'Payments', href: '/admin/payments' },
   { label: 'Staff and Workers', href: '/admin/staff' },
   { label: 'Complaints and Maintenance', href: '/admin/maintenance' },
