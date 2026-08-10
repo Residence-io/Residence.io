@@ -90,13 +90,26 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
         account: _account, // ignored here — account creation handled separately
       } = body;
 
-      // Get society_id — single-society deployment, just fetch the first one
-      const { data: soc } = await supabase
-        .from('society')
-        .select('id')
-        .single();
-      const society_id = soc?.id;
-      if (!society_id) throw new Error('Society not found.');
+      // Get society_id — read from department table (admin always has access)
+      let society_id: string | null = null;
+      const { data: deptRow } = await supabase
+        .from('department')
+        .select('society_id')
+        .limit(1)
+        .maybeSingle();
+      society_id = deptRow?.society_id ?? null;
+
+      // Fallback: try job_title
+      if (!society_id) {
+        const { data: jtRow } = await supabase
+          .from('job_title')
+          .select('society_id')
+          .limit(1)
+          .maybeSingle();
+        society_id = jtRow?.society_id ?? null;
+      }
+
+      if (!society_id) throw new Error('Could not determine society. Please ensure at least one department exists.');
 
       // Derive identity_last_four from CNIC digits
       const idDigits = String(identityDocumentNumber ?? '').replace(/\D/g, '');
