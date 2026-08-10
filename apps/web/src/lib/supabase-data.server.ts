@@ -594,9 +594,23 @@ export async function fetchMaintenanceRequest(id: string) {
 
 export async function fetchDepartments() {
   const supabase = await getClient();
-  const { data, error } = await supabase.from('department').select('*');
+  const { data, error } = await supabase
+    .from('department')
+    .select('*, jobTitles:job_title(id, name, active)')
+    .eq('active', true)
+    .order('display_order', { ascending: true });
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []).map((d: any) => ({
+    id: d.id,
+    name: d.name,
+    description: d.description ?? null,
+    active: d.active,
+    jobTitles: (d.jobTitles ?? []).map((j: any) => ({
+      id: j.id,
+      name: j.name,
+      active: j.active,
+    })),
+  }));
 }
 
 export async function fetchPayment(id: string) {
