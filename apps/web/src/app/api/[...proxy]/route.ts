@@ -90,14 +90,13 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
         account: _account, // ignored here — account creation handled separately
       } = body;
 
-      // Get society_id from user's account
-      const { data: ua } = await supabase
-        .from('user_account')
-        .select('society_id')
-        .eq('auth_id', user?.id)
+      // Get society_id — single-society deployment, just fetch the first one
+      const { data: soc } = await supabase
+        .from('society')
+        .select('id')
         .single();
-      const society_id = ua?.society_id;
-      if (!society_id) throw new Error('Society not found for this user.');
+      const society_id = soc?.id;
+      if (!society_id) throw new Error('Society not found.');
 
       // Derive identity_last_four from CNIC digits
       const idDigits = String(identityDocumentNumber ?? '').replace(/\D/g, '');
