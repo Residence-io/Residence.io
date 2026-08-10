@@ -126,7 +126,7 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       // Revoke existing active cards
       await supabase
         .from('resident_id_card')
-        .update({ status: 'REVOKED', updated_at: new Date().toISOString() })
+        .update({ status: 'REVOKED' })
         .eq('resident_id', residentId)
         .eq('status', 'ACTIVE');
       // Issue new card
@@ -137,7 +137,6 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
           card_number: `RC-${cardNum}`,
           status: 'ACTIVE',
           issued_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
