@@ -68,75 +68,119 @@ export async function fetchResidents(societyId?: string) {
 export async function fetchResident(id: string) {
   const supabase = await getClient();
 
-  // Fetch resident + occupancies in one query (same RLS policy: RESIDENT_READ)
+  // Fetch resident + occupancies
   const { data, error } = await supabase
     .from('resident')
-    .select(
-      `
-      *,
-      occupancies:resident_occupancy(
-        *,
-        unit(
-          *,
-          property(*)
-        )
-      )
-    `,
-    )
+    .select(`*, occupancies:resident_occupancy(*, unit(*, property(*)))`)
     .eq('id', id)
     .single();
   if (error) throw new Error(error.message);
 
   const raw = data as any;
 
-  // Fetch related tables independently — RLS may block some; that's OK
+  // Fetch related tables independently — RLS may block some; returns [] on failure
   const [idCardsResult, vehiclesResult, documentsResult] = await Promise.all([
     supabase.from('resident_id_card').select('*').eq('resident_id', id),
     supabase.from('vehicle').select('*').eq('resident_id', id),
     supabase.from('resident_document').select('*').eq('resident_id', id),
   ]);
 
-  raw.idCards = (idCardsResult.data ?? []).map((c: any) => ({
-    ...c,
-    issuedAt: c.issuedAt ?? c.issued_at,
-  }));
-  raw.vehicles = vehiclesResult.data ?? [];
-  raw.documents = documentsResult.data ?? [];
-
-  // profilePhotograph: from document or profile_photograph_object_key column
-  const photoDoc = (raw.documents ?? []).find(
+  const documents = documentsResult.data ?? [];
+  const photoDoc = documents.find(
     (d: any) => d.category === 'PROFILE_PHOTOGRAPH' && d.status === 'ACTIVE',
   );
-  raw.profilePhotograph = photoDoc
-    ? { ...photoDoc, createdAt: photoDoc.created_at }
-    : raw.profile_photograph_object_key
-      ? {
-          objectKey: raw.profile_photograph_object_key,
-          createdAt: raw.updated_at,
-        }
-      : null;
 
-  // Normalize camelCase fields from snake_case for occupancies
-  raw.occupancies = (raw.occupancies ?? []).map((occ: any) => ({
-    ...occ,
-    endDate: occ.endDate ?? occ.end_date ?? null,
-    unit: occ.unit
-      ? {
-          ...occ.unit,
-          unitNumber: occ.unit.unitNumber ?? occ.unit.unit_number,
-          property: occ.unit.property
-            ? {
-                ...occ.unit.property,
-                propertyNumber:
-                  occ.unit.property.propertyNumber ??
-                  occ.unit.property.property_number,
-              }
-            : null,
-        }
+  // Fully normalize to camelCase that the page expects
+  return {
+    // Core identity
+    id: raw.id,
+    residentNumber: raw.resident_number,
+    fullName: raw.full_name,
+    guardianName: raw.guardian_name ?? null,
+    dateOfBirth: raw.date_of_birth ?? null,
+    gender: raw.gender,
+    email: raw.email ?? null,
+    primaryPhone: raw.primary_phone,
+    alternatePhone: raw.alternate_phone ?? null,
+    identityNumber: raw.identity_last_four
+      ? `****${raw.identity_last_four}`
       : null,
-  }));
+    permanentAddress: raw.permanent_address ?? null,
+    emergencyContactName: raw.emergency_contact_name ?? null,
+    emergencyContactPhone: raw.emergency_contact_phone ?? null,
+    householdSize: raw.household_size ?? 1,
+    status: raw.status,
+    suspensionReason: raw.suspension_reason ?? null,
+    version: raw.version,
+    society: null,
+    user: null,
 
-  return raw as ApiResident;
+    // Photograph
+    profilePhotograph: photoDoc
+      ? { ...photoDoc, createdAt: photoDoc.created_at }
+      : raw.profile_photograph_object_key
+        ? {
+            objectKey: raw.profile_photograph_object_key,
+            createdAt: raw.updated_at,
+          }
+        : null,
+
+    // Occupancies — normalize nested snake_case
+    occupancies: (raw.occupancies ?? []).map((occ: any) => ({
+      id: occ.id,
+      occupancyType: occ.occupancy_type,
+      startDate: occ.start_date,
+      endDate: occ.end_date ?? null,
+      unit: occ.unit
+        ? {
+            id: occ.unit.id,
+            unitNumber: occ.unit.unit_number,
+            property: occ.unit.property
+              ? {
+                  id: occ.unit.property.id,
+                  block: occ.unit.property.block,
+                  street: occ.unit.property.street ?? null,
+                  propertyNumber: occ.unit.property.property_number,
+                  type: occ.unit.property.type,
+                }
+              : null,
+          }
+        : null,
+    })),
+
+    // ID Cards
+    idCards: (idCardsResult.data ?? []).map((c: any) => ({
+      id: c.id,
+      cardNumber: c.card_number,
+      status: c.status,
+      issuedAt: c.issued_at,
+      expiresAt: c.expires_at ?? null,
+    })),
+
+    // Vehicles
+    vehicles: (vehiclesResult.data ?? []).map((v: any) => ({
+      id: v.id,
+      type: v.type,
+      name: v.manufacturer && v.model ? `${v.manufacturer} ${v.model}` : null,
+      registrationNumber: v.registration_number,
+      active: v.active,
+    })),
+
+    // Documents
+    documents: documents.map((d: any) => ({
+      id: d.id,
+      category: d.category,
+      status: d.status,
+      originalFileName: d.original_file_name,
+      mediaType: d.media_type,
+      sizeBytes: d.size_bytes,
+      createdAt: d.created_at,
+    })),
+
+    // Empty arrays for fields not yet fetched
+    householdMembers: [],
+    feeAssignments: [],
+  } as ApiResident;
 }
 
 // ─── Properties ───────────────────────────────────────────────────────────────
