@@ -442,32 +442,61 @@ export function ResidentRegistrationForm({
       <Card hidden={step !== 1} data-step="1">
         <h2 className="font-bold">Residence information</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <label>
+          <label className="relative block">
             Property and Unit
             <input
+              autoComplete="off"
               className={field}
-              list="property-unit-options"
               name="unitSearch"
-              placeholder="Search block, property, or unit"
+              placeholder="e.g. A · 101 · 101"
               value={unitSearch}
               onChange={(event) => {
                 const value = event.target.value;
-                const unit = unitOptions.find(
+                setUnitSearch(value);
+                const match = unitOptions.find(
                   (option) => option.label === value,
                 );
-                setUnitSearch(value);
-                setSelectedUnitId(unit?.id ?? '');
+                setSelectedUnitId(match?.id ?? '');
                 event.currentTarget.setCustomValidity(
-                  value && !unit ? 'Select a unit from the list.' : '',
+                  value && !match
+                    ? 'Select an address from the suggestions.'
+                    : '',
                 );
               }}
               required
             />
-            <datalist id="property-unit-options">
-              {unitOptions.map((unit) => (
-                <option key={unit.id} value={unit.label} />
-              ))}
-            </datalist>
+            {/* Custom dropdown — shows matching options as admin types */}
+            {unitSearch.trim().length > 0 && (
+              <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg text-sm">
+                {unitOptions
+                  .filter((option) =>
+                    option.label
+                      .toLowerCase()
+                      .includes(unitSearch.toLowerCase()),
+                  )
+                  .slice(0, 20)
+                  .map((option) => (
+                    <li
+                      key={option.id}
+                      className="cursor-pointer px-4 py-2.5 hover:bg-blue-50 hover:text-blue-700"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        setUnitSearch(option.label);
+                        setSelectedUnitId(option.id);
+                      }}
+                    >
+                      {option.label}
+                    </li>
+                  ))}
+                {unitOptions.filter((option) =>
+                  option.label.toLowerCase().includes(unitSearch.toLowerCase()),
+                ).length === 0 && (
+                  <li className="px-4 py-2.5 text-slate-400">
+                    No matching address found.
+                  </li>
+                )}
+              </ul>
+            )}
             <input type="hidden" name="unitId" value={selectedUnitId} />
           </label>
           <label>
