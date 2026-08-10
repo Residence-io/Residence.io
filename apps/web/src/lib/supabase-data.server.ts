@@ -228,7 +228,7 @@ export async function fetchUnits(propertyId: string) {
 
 export async function fetchDues(societyId?: string) {
   const supabase = await getClient();
-  let query = supabase.from('dues').select('*');
+  let query = supabase.from('monthly_due').select('*');
   if (societyId) query = query.eq('society_id', societyId);
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
@@ -269,7 +269,7 @@ export async function fetchFinanceDashboard(societyId?: string) {
 
 export async function fetchFeePlans(societyId?: string) {
   const supabase = await getClient();
-  let query = supabase.from('fee_plans').select('*');
+  let query = supabase.from('fee_plan').select('*');
   if (societyId) query = query.eq('society_id', societyId);
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
@@ -285,7 +285,7 @@ export async function fetchFeePlans(societyId?: string) {
 
 export async function fetchReceipts(societyId?: string) {
   const supabase = await getClient();
-  let query = supabase.from('receipts').select('*');
+  let query = supabase.from('receipt').select('*');
   if (societyId) query = query.eq('society_id', societyId);
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
@@ -305,7 +305,7 @@ export async function fetchResidentFinancialSummary(residentId: string) {
 
 export async function fetchComplaints(societyId?: string) {
   const supabase = await getClient();
-  let query = supabase.from('complaints').select('*');
+  let query = supabase.from('complaint').select('*');
   if (societyId) query = query.eq('society_id', societyId);
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
@@ -322,7 +322,7 @@ export async function fetchComplaints(societyId?: string) {
 
 export async function fetchMaintenanceRequests(societyId?: string) {
   const supabase = await getClient();
-  let query = supabase.from('maintenance_requests').select('*');
+  let query = supabase.from('maintenance_request').select('*');
   if (societyId) query = query.eq('society_id', societyId);
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
@@ -411,7 +411,7 @@ export async function fetchMyNotifications() {
 
 export async function fetchAnnouncements(societyId?: string) {
   const supabase = await getClient();
-  let query = supabase.from('announcements').select('*');
+  let query = supabase.from('announcement').select('*');
   if (societyId) query = query.eq('society_id', societyId);
   const { data, error } = await query.order('publish_at', { ascending: false });
   if (error) throw new Error(error.message);
@@ -594,7 +594,7 @@ export async function fetchMaintenanceRequest(id: string) {
 
 export async function fetchDepartments() {
   const supabase = await getClient();
-  const { data, error } = await supabase.from('departments').select('*');
+  const { data, error } = await supabase.from('department').select('*');
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -665,7 +665,9 @@ export async function fetchNotificationBatch(id: string) {
 
 export async function fetchDeliveryLogs(query: string) {
   const supabase = await getClient();
-  const { data, error } = await supabase.from('delivery_logs').select('*');
+  const { data, error } = await supabase
+    .from('notification_delivery')
+    .select('*');
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -693,14 +695,14 @@ export async function fetchMaintenanceRequestsByQuery(query: string) {
 
 export async function fetchComplaintsByQuery(query: string) {
   const supabase = await getClient();
-  const { data, error } = await supabase.from('complaints').select('*');
+  const { data, error } = await supabase.from('complaint').select('*');
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
 export async function fetchAnnouncementsList() {
   const supabase = await getClient();
-  const { data, error } = await supabase.from('announcements').select('*');
+  const { data, error } = await supabase.from('announcement').select('*');
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -719,14 +721,14 @@ export async function fetchAnnouncement(id: string) {
 
 export async function fetchUsers() {
   const supabase = await getClient();
-  const { data, error } = await supabase.from('users').select('*');
+  const { data, error } = await supabase.from('user_account').select('*');
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
 export async function fetchHouseholdMembers() {
   const supabase = await getClient();
-  const { data, error } = await supabase.from('household_members').select('*');
+  const { data, error } = await supabase.from('household_member').select('*');
   if (error) throw new Error(error.message);
   return data ?? [];
 }
