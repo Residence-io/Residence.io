@@ -114,20 +114,97 @@ export function DepartmentForms({
   );
 }
 
+type JobTitle = { id: string; name: string; active: boolean };
+type DeptWithSociety = Department & { societyId?: string };
+
 export function StaffRegistrationForm({
   csrfToken,
   departments,
 }: {
   csrfToken: string;
-  departments: Department[];
+  departments: DeptWithSociety[];
 }) {
   const action = useAction(csrfToken);
   const router = useRouter();
+
+  // ── Department & Job Title state ──────────────────────────────────────────
   const [selectedDeptId, setSelectedDeptId] = useState(
     departments[0]?.id ?? '',
   );
-  const selectedDept = departments.find((d) => d.id === selectedDeptId);
-  const jobTitles = selectedDept?.jobTitles?.filter((j) => j.active) ?? [];
+  // Local job titles state — starts from server data, updated instantly on add/delete
+  const [localDepts, setLocalDepts] = useState<DeptWithSociety[]>(departments);
+  const [managingTitles, setManagingTitles] = useState(false);
+  const [newTitleName, setNewTitleName] = useState('');
+  const [titleBusy, setTitleBusy] = useState(false);
+  const [titleError, setTitleError] = useState('');
+
+  const selectedDept = localDepts.find((d) => d.id === selectedDeptId);
+  const jobTitles = (selectedDept?.jobTitles ?? []).filter((j) => j.active);
+
+  function updateDeptTitles(
+    deptId: string,
+    updater: (t: JobTitle[]) => JobTitle[],
+  ) {
+    setLocalDepts((prev) =>
+      prev.map((d) =>
+        d.id === deptId ? { ...d, jobTitles: updater(d.jobTitles ?? []) } : d,
+      ),
+    );
+  }
+
+  async function addJobTitle() {
+    if (!newTitleName.trim() || !selectedDeptId) return;
+    setTitleBusy(true);
+    setTitleError('');
+    try {
+      const res = await fetch(`${API_URL}/job_title`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'content-type': 'application/json',
+          'x-csrf-token': csrfToken,
+        },
+        body: JSON.stringify({
+          department_id: selectedDeptId,
+          society_id: selectedDept?.societyId,
+          name: newTitleName.trim(),
+          normalized_name: newTitleName.trim().toUpperCase(),
+          active: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message ?? 'Failed to add job title');
+      updateDeptTitles(selectedDeptId, (prev) => [
+        ...prev,
+        { id: data.id, name: newTitleName.trim(), active: true },
+      ]);
+      setNewTitleName('');
+    } catch (e: any) {
+      setTitleError(e.message);
+    } finally {
+      setTitleBusy(false);
+    }
+  }
+
+  async function deleteJobTitle(titleId: string) {
+    setTitleBusy(true);
+    setTitleError('');
+    try {
+      const res = await fetch(`${API_URL}/job_title/${titleId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'x-csrf-token': csrfToken },
+      });
+      if (!res.ok) throw new Error('Failed to delete job title');
+      updateDeptTitles(selectedDeptId, (prev) =>
+        prev.filter((j) => j.id !== titleId),
+      );
+    } catch (e: any) {
+      setTitleError(e.message);
+    } finally {
+      setTitleBusy(false);
+    }
+  }
 
   return (
     <form
@@ -152,7 +229,7 @@ export function StaffRegistrationForm({
           });
       }}
     >
-      {/* Personal Information */}
+      {/* ── Personal Information ─────────────────────────────────────────── */}
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
           Personal Information
@@ -214,7 +291,7 @@ export function StaffRegistrationForm({
         </div>
       </div>
 
-      {/* Employment Details */}
+      {/* ── Employment Details ───────────────────────────────────────────── */}
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
           Employment Details
@@ -229,20 +306,37 @@ export function StaffRegistrationForm({
               name="departmentId"
               required
               value={selectedDeptId}
-              onChange={(e) => setSelectedDeptId(e.target.value)}
+              onChange={(e) => {
+                setSelectedDeptId(e.target.value);
+                setManagingTitles(false);
+                setTitleError('');
+              }}
             >
               <option value="">Select department</option>
-              {departments.map((d) => (
+              {localDepts.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>
               ))}
             </select>
           </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
-              Job Title <span className="text-red-500">*</span>
-            </span>
+
+          {/* Job Title + Manage button */}
+          <div className="block">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">
+                Job Title <span className="text-red-500">*</span>
+              </span>
+              {selectedDeptId && (
+                <button
+                  type="button"
+                  onClick={() => setManagingTitles((v) => !v)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                >
+                  {managingTitles ? '✕ Close' : '⚙ Manage titles'}
+                </button>
+              )}
+            </div>
             <select className={input} name="jobTitleId" required>
               <option value="">Select job title</option>
               {jobTitles.map((j) => (
@@ -251,7 +345,70 @@ export function StaffRegistrationForm({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
+        </div>
+
+        {/* ── Inline Job Title Manager ────────────────────────────────────── */}
+        {managingTitles && selectedDeptId && (
+          <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-blue-700">
+              Job Titles — {selectedDept?.name}
+            </p>
+
+            {/* Existing titles list */}
+            {jobTitles.length === 0 ? (
+              <p className="mb-3 text-sm text-slate-500">No job titles yet.</p>
+            ) : (
+              <ul className="mb-3 space-y-1">
+                {jobTitles.map((j) => (
+                  <li
+                    key={j.id}
+                    className="flex items-center justify-between rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm"
+                  >
+                    <span className="font-medium text-slate-800">{j.name}</span>
+                    <button
+                      type="button"
+                      disabled={titleBusy}
+                      onClick={() => deleteJobTitle(j.id)}
+                      className="ml-3 rounded px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Add new title */}
+            <div className="flex gap-2">
+              <input
+                className="flex-1 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="New job title name…"
+                value={newTitleName}
+                onChange={(e) => setNewTitleName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void addJobTitle();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                disabled={titleBusy || !newTitleName.trim()}
+                onClick={() => void addJobTitle()}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
+              >
+                {titleBusy ? '…' : '+ Add'}
+              </button>
+            </div>
+            {titleError && (
+              <p className="mt-2 text-xs text-red-600">{titleError}</p>
+            )}
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">
               Employment Type <span className="text-red-500">*</span>

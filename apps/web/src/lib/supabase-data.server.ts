@@ -602,6 +602,7 @@ export async function fetchDepartments() {
   if (error) throw new Error(error.message);
   return (data ?? []).map((d: any) => ({
     id: d.id,
+    societyId: d.society_id,
     name: d.name,
     description: d.description ?? null,
     active: d.active,
