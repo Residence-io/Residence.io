@@ -180,7 +180,7 @@ export async function fetchResident(id: string) {
     // Empty arrays for fields not yet fetched
     householdMembers: [],
     feeAssignments: [],
-  } as ApiResident;
+  } as unknown as ApiResident;
 }
 
 // ─── Properties ───────────────────────────────────────────────────────────────
