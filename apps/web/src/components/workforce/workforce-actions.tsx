@@ -170,6 +170,7 @@ export function StaffRegistrationForm({
           name: newTitleName.trim(),
           normalized_name: newTitleName.trim().toUpperCase(),
           active: true,
+          updated_at: new Date().toISOString(),
         }),
       });
       const data = await res.json();
