@@ -182,7 +182,7 @@ export function StaffRegistrationForm({
           societyId,
           name: newDeptName.trim(),
           active: true,
-          description: null,
+          description: undefined,
           jobTitles: [],
         },
       ]);
