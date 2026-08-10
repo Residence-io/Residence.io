@@ -448,24 +448,22 @@ export function ResidentRegistrationForm({
               autoComplete="off"
               className={field}
               name="unitSearch"
-              placeholder="e.g. A · 101 · 101"
+              placeholder="e.g. A-33 or Block A, House 101"
               value={unitSearch}
               onChange={(event) => {
                 const value = event.target.value;
                 setUnitSearch(value);
+                // If typed value exactly matches a registered address, link unitId
                 const match = unitOptions.find(
                   (option) => option.label === value,
                 );
                 setSelectedUnitId(match?.id ?? '');
-                event.currentTarget.setCustomValidity(
-                  value && !match
-                    ? 'Select an address from the suggestions.'
-                    : '',
-                );
+                // Clear any previous browser validation error
+                event.currentTarget.setCustomValidity('');
               }}
               required
             />
-            {/* Custom dropdown — shows matching options as admin types */}
+            {/* Dropdown — reference only, shows previously registered addresses */}
             {unitSearch.trim().length > 0 && (
               <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg text-sm">
                 {unitOptions
@@ -485,6 +483,9 @@ export function ResidentRegistrationForm({
                         setSelectedUnitId(option.id);
                       }}
                     >
+                      <span className="text-xs font-semibold uppercase tracking-wide text-blue-500">
+                        Previously registered ·{' '}
+                      </span>
                       {option.label}
                     </li>
                   ))}
@@ -492,7 +493,7 @@ export function ResidentRegistrationForm({
                   option.label.toLowerCase().includes(unitSearch.toLowerCase()),
                 ).length === 0 && (
                   <li className="px-4 py-2.5 text-slate-400">
-                    No matching address found.
+                    New address — will be registered fresh.
                   </li>
                 )}
               </ul>
