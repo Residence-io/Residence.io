@@ -119,11 +119,19 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       const identity_last_four =
         idDigits.length >= 4 ? idDigits.slice(-4) : null;
 
+      // Auto-generate resident_number e.g. R-0001
+      const { count: resCount } = await supabase
+        .from('resident')
+        .select('*', { count: 'exact', head: true });
+      const nextNum = ((resCount ?? 0) + 1).toString().padStart(4, '0');
+      const resident_number = `R-${nextNum}`;
+
       // 1. Insert resident
       const { data: resident, error: re } = await supabase
         .from('resident')
         .insert({
           society_id,
+          resident_number,
           full_name: fullName,
           normalized_full_name: String(fullName ?? '').toUpperCase(),
           date_of_birth: dateOfBirth || null,
