@@ -94,14 +94,23 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       const { error: upErr } = await supabase.storage
         .from('resident-documents')
         .upload(objectKey, file, { contentType: file.type, upsert: true });
-      if (upErr) throw upErr;
-      await supabase
+      if (upErr)
+        return NextResponse.json(
+          { message: `Storage upload failed: ${upErr.message}` },
+          { status: 500 },
+        );
+      const { error: updateErr } = await supabase
         .from('resident')
         .update({
           profile_photograph_object_key: objectKey,
           updated_at: new Date().toISOString(),
         })
         .eq('id', residentId);
+      if (updateErr)
+        return NextResponse.json(
+          { message: `Database update failed: ${updateErr.message}` },
+          { status: 500 },
+        );
       return NextResponse.json({ success: true });
     }
 
