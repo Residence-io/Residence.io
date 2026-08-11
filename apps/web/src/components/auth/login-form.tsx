@@ -146,11 +146,6 @@ export function LoginForm() {
       <Button className="w-full" disabled={loading} type="submit">
         {loading ? 'Signing in…' : 'Sign in'}
       </Button>
-      <p className="text-center text-sm text-slate-500">
-        <a href="/forgot-password" className="text-blue-700 hover:underline">
-          Forgot your password?
-        </a>
-      </p>
     </form>
   );
 }
