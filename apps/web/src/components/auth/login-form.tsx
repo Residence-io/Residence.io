@@ -38,11 +38,11 @@ export function LoginForm() {
         if (res.ok && body.email) {
           email = body.email;
         } else {
-          email = `${identifier.toLowerCase()}@residence.local`;
+          email = `${identifier.toLowerCase()}@example.test`;
         }
       } catch {
         // Fallback if edge function fetch fails (e.g. not deployed yet)
-        email = `${identifier.toLowerCase()}@residence.local`;
+        email = `${identifier.toLowerCase()}@example.test`;
       }
     }
 
