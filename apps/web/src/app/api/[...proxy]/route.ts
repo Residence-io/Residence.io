@@ -273,12 +273,10 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
             .maybeSingle()
         ).data?.society_id;
 
-      // Determine email for Supabase Auth
-      // If no email given, use username@example.test (matches login form fallback)
-      const authEmail =
-        email && email.includes('@')
-          ? email
-          : `${username.toLowerCase()}@example.test`;
+      // ALWAYS use username@residence.local for Supabase Auth email.
+      // This avoids conflicts with real emails and works with the login
+      // form's username→email resolution fallback.
+      const authEmail = `${username.toLowerCase()}@residence.local`;
 
       // Step 1: Create Supabase Auth user so login works
       let authUserId: string | null = null;
