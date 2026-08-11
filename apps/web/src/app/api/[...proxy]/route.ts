@@ -272,34 +272,8 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
             .limit(1)
             .maybeSingle()
         ).data?.society_id;
-
-      // Use username@example.test for Supabase Auth — consistent with the
-      // login form fallback AND the resolve-username edge function format.
-      // The admin's display email (if any) is stored separately in user_account.
-      const authEmail = `${username.toLowerCase()}@example.test`;
-
-      // Step 1: Create Supabase Auth user so login works
-      let authUserId: string | null = null;
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp(
-        {
-          email: authEmail,
-          password: temporaryPassword,
-          options: {
-            data: {
-              username,
-              display_name: resRow?.full_name ?? username,
-            },
-          },
-        },
-      );
-      if (signUpErr) {
-        // Non-fatal: log but continue (user_account still gets created)
-        console.warn('[account] signUp warning:', signUpErr.message);
-      } else {
-        authUserId = signUpData.user?.id ?? null;
-      }
-
-      // Step 2: Create user_account row + link resident.user_id via RPC
+      // Auth email: username@example.test (matches login form fallback)
+      // Auth user creation is now handled INSIDE the RPC via fn_create_auth_user
       const { data: account, error: acctErr } = await supabase.rpc(
         'fn_create_resident_account',
         {
@@ -309,12 +283,11 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
           p_email: email ?? '',
           p_display_name: resRow?.full_name ?? username,
           p_temp_password: temporaryPassword,
-          p_auth_user_id: authUserId,
         },
       );
       if (acctErr)
         return NextResponse.json({ message: acctErr.message }, { status: 500 });
-      return NextResponse.json({ account, authUserId });
+      return NextResponse.json({ account });
     }
 
     // --- Residents — full registration ---
