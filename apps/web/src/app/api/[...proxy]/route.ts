@@ -158,6 +158,87 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       return NextResponse.json({ card });
     }
 
+    // --- Vehicles: POST /api/residents/{id}/vehicles ---
+    if (
+      req.method === 'POST' &&
+      params.proxy[0] === 'residents' &&
+      params.proxy[2] === 'vehicles' &&
+      params.proxy.length === 3
+    ) {
+      const residentId = params.proxy[1];
+      const { type, vehicleName, numberPlate } = body as Record<string, string>;
+      if (!type || !numberPlate)
+        return NextResponse.json(
+          { message: 'Vehicle type and number plate are required.' },
+          { status: 400 },
+        );
+      // Get society_id
+      const { data: dRow2 } = await supabase
+        .from('department')
+        .select('society_id')
+        .limit(1)
+        .maybeSingle();
+      const { data: vehicle, error: vehicleErr } = await supabase
+        .from('vehicle')
+        .insert({
+          resident_id: residentId,
+          society_id: dRow2?.society_id,
+          type,
+          name: vehicleName || null,
+          registration_number: numberPlate,
+          normalized_registration_number: String(numberPlate)
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, ''),
+          active: true,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (vehicleErr)
+        return NextResponse.json(
+          { message: vehicleErr.message },
+          { status: 500 },
+        );
+      return NextResponse.json({ vehicle });
+    }
+
+    // --- Household members: POST /api/residents/{id}/household-members ---
+    if (
+      req.method === 'POST' &&
+      params.proxy[0] === 'residents' &&
+      params.proxy[2] === 'household-members' &&
+      params.proxy.length === 3
+    ) {
+      const residentId = params.proxy[1];
+      const { fullName, age, phone } = body as Record<string, string>;
+      if (!fullName)
+        return NextResponse.json(
+          { message: 'Full name is required.' },
+          { status: 400 },
+        );
+      const { data: member, error: memberErr } = await supabase
+        .from('household_member')
+        .insert({
+          resident_id: residentId,
+          full_name: fullName,
+          relationship: 'OTHER',
+          gender: 'UNKNOWN',
+          age: age ? Number(age) : null,
+          phone: phone || null,
+          emergency_contact: false,
+          status: 'ACTIVE',
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (memberErr)
+        return NextResponse.json(
+          { message: memberErr.message },
+          { status: 500 },
+        );
+      return NextResponse.json({ member });
+    }
+
     // --- Residents — full registration ---
     if (path === 'residents' && req.method === 'POST') {
       const {
