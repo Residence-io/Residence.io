@@ -21,6 +21,7 @@ type ResidentActionsProps = {
   hasAccount: boolean;
   accountStatus?: string;
   accountEmail?: string;
+  accountUsername?: string;
   canUpdate: boolean;
   canManageStatus: boolean;
   canArchive: boolean;
@@ -39,6 +40,7 @@ export function ResidentActions(props: ResidentActionsProps) {
     hasAccount,
     accountStatus,
     accountEmail,
+    accountUsername,
     canUpdate,
     canManageStatus,
     canArchive,
@@ -50,6 +52,11 @@ export function ResidentActions(props: ResidentActionsProps) {
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [temporaryPassword, setTemporaryPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    username: string;
+    email: string;
+    password: string;
+  } | null>(null);
   const router = useRouter();
 
   async function post(
@@ -155,16 +162,51 @@ export function ResidentActions(props: ResidentActionsProps) {
               onSubmit={(event) => {
                 event.preventDefault();
                 const data = new FormData(event.currentTarget);
-                void post(
-                  'account',
-                  {
-                    username: data.get('username'),
-                    email: data.get('email'),
-                    active: data.get('active') === 'on',
-                    temporaryPassword,
-                  },
-                  'Login account created successfully. Share the temporary password securely; it cannot be retrieved later.',
-                );
+                const uname = String(data.get('username') ?? '');
+                const uemail = String(data.get('email') ?? '');
+                setBusy(true);
+                setMessage('');
+                try {
+                  const response = await fetch(
+                    `${API_URL}/residents/${residentId}/account`,
+                    {
+                      method: 'POST',
+                      credentials: 'include',
+                      headers: {
+                        'content-type': 'application/json',
+                        'x-csrf-token': csrfToken,
+                      },
+                      body: JSON.stringify({
+                        username: uname,
+                        email: uemail,
+                        active: data.get('active') === 'on',
+                        temporaryPassword,
+                      }),
+                    },
+                  );
+                  const result = (await response.json().catch(() => ({}))) as {
+                    message?: string;
+                  };
+                  if (!response.ok)
+                    throw new Error(
+                      result.message ?? 'Account creation failed.',
+                    );
+                  setCreatedCredentials({
+                    username: uname,
+                    email: uemail,
+                    password: temporaryPassword,
+                  });
+                  setShowPassword(true);
+                  setShowAccountForm(false);
+                  setMessage('');
+                  router.refresh();
+                } catch (err) {
+                  setMessage(
+                    err instanceof Error ? err.message : 'Action failed.',
+                  );
+                } finally {
+                  setBusy(false);
+                }
               }}
             >
               <label>
@@ -247,7 +289,93 @@ export function ResidentActions(props: ResidentActionsProps) {
 
       {canUpdate && hasAccount && (
         <Card>
-          <h2 className="font-bold">Account security actions</h2>
+          <h2 className="font-bold">Login account</h2>
+
+          {/* Credentials display */}
+          <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+            <div className="flex items-center gap-3">
+              <span className="w-20 shrink-0 text-slate-500">Email</span>
+              <span className="font-mono">
+                {createdCredentials?.email ?? accountEmail ?? '—'}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-20 shrink-0 text-slate-500">Username</span>
+              <span className="font-mono">
+                {createdCredentials?.username ?? accountUsername ?? '—'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-20 shrink-0 text-slate-500">Password</span>
+              <input
+                className="min-h-9 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1 font-mono text-sm"
+                type={showPassword ? 'text' : 'password'}
+                value={createdCredentials?.password ?? temporaryPassword ?? ''}
+                readOnly
+                placeholder="Generate a new temporary password below"
+              />
+              <button
+                className="shrink-0 rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
+                onClick={() => setShowPassword((v) => !v)}
+                type="button"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+              <button
+                className="shrink-0 rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
+                onClick={() => {
+                  const pw = createdCredentials?.password ?? temporaryPassword;
+                  if (pw) void navigator.clipboard.writeText(pw);
+                }}
+                type="button"
+              >
+                Copy
+              </button>
+              <button
+                className="shrink-0 rounded-lg bg-blue-700 px-3 py-1 text-xs font-medium text-white hover:bg-blue-800"
+                onClick={() => {
+                  const pw = generateTemporaryPassword();
+                  setTemporaryPassword(pw);
+                  if (createdCredentials)
+                    setCreatedCredentials({
+                      ...createdCredentials,
+                      password: pw,
+                    });
+                  setShowPassword(true);
+                }}
+                type="button"
+              >
+                ↻ Regenerate
+              </button>
+            </div>
+            {(createdCredentials?.password ?? temporaryPassword) && (
+              <p className="text-xs text-amber-700">
+                ⚠ Share this password securely — it cannot be retrieved later.
+              </p>
+            )}
+          </div>
+
+          {temporaryPassword && !createdCredentials && (
+            <div className="mt-3">
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  const reason = window.prompt(
+                    'Reason for setting the new temporary password',
+                  );
+                  if (reason)
+                    void post(
+                      'account/temporary-password',
+                      { temporaryPassword, reason },
+                      'A new temporary password was set and active sessions were revoked.',
+                    );
+                }}
+              >
+                Set Temporary Password
+              </Button>
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-2">
             <Button disabled={busy} onClick={generatePassword}>
               {temporaryPassword

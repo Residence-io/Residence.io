@@ -485,6 +485,7 @@ export default async function ResidentDetailPage({
           <ResidentActions
             accountEmail={resident.user?.email ?? resident.email}
             accountStatus={resident.user?.status}
+            accountUsername={resident.user?.username}
             canArchive={canArchive}
             canManageCard={canManageCard}
             canManageDocuments={canManageDocuments}

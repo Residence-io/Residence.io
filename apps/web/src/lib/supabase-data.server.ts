@@ -71,7 +71,9 @@ export async function fetchResident(id: string) {
   // Fetch resident + occupancies
   const { data, error } = await supabase
     .from('resident')
-    .select(`*, occupancies:resident_occupancy(*, unit(*, property(*)))`)
+    .select(
+      `*, user:user_account(*), occupancies:resident_occupancy(*, unit(*, property(*)))`,
+    )
     .eq('id', id)
     .single();
   if (error) throw new Error(error.message);
@@ -113,7 +115,14 @@ export async function fetchResident(id: string) {
     suspensionReason: raw.suspension_reason ?? null,
     version: raw.version,
     society: null,
-    user: null,
+    // User account
+    user: raw.user
+      ? {
+          username: raw.user.username,
+          email: raw.user.email,
+          status: raw.user.status,
+        }
+      : null,
 
     // Photograph
     profilePhotograph: photoDoc
