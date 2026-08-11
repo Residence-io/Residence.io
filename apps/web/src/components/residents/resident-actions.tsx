@@ -159,7 +159,7 @@ export function ResidentActions(props: ResidentActionsProps) {
           ) : (
             <form
               className="mt-4 grid gap-4 md:grid-cols-2"
-              onSubmit={(event) => {
+              onSubmit={async (event) => {
                 event.preventDefault();
                 const data = new FormData(event.currentTarget);
                 const uname = String(data.get('username') ?? '');
