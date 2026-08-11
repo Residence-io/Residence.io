@@ -256,6 +256,7 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
           { message: 'Username and temporary password are required.' },
           { status: 400 },
         );
+
       // Get society_id + resident display name
       const { data: resRow } = await supabase
         .from('resident')
@@ -271,6 +272,36 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
             .limit(1)
             .maybeSingle()
         ).data?.society_id;
+
+      // Determine email for Supabase Auth
+      // If no email given, use username@example.test (matches login form fallback)
+      const authEmail =
+        email && email.includes('@')
+          ? email
+          : `${username.toLowerCase()}@example.test`;
+
+      // Step 1: Create Supabase Auth user so login works
+      let authUserId: string | null = null;
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp(
+        {
+          email: authEmail,
+          password: temporaryPassword,
+          options: {
+            data: {
+              username,
+              display_name: resRow?.full_name ?? username,
+            },
+          },
+        },
+      );
+      if (signUpErr) {
+        // Non-fatal: log but continue (user_account still gets created)
+        console.warn('[account] signUp warning:', signUpErr.message);
+      } else {
+        authUserId = signUpData.user?.id ?? null;
+      }
+
+      // Step 2: Create user_account row + link resident.user_id via RPC
       const { data: account, error: acctErr } = await supabase.rpc(
         'fn_create_resident_account',
         {
@@ -280,11 +311,12 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
           p_email: email ?? '',
           p_display_name: resRow?.full_name ?? username,
           p_temp_password: temporaryPassword,
+          p_auth_user_id: authUserId,
         },
       );
       if (acctErr)
         return NextResponse.json({ message: acctErr.message }, { status: 500 });
-      return NextResponse.json({ account });
+      return NextResponse.json({ account, authUserId });
     }
 
     // --- Residents — full registration ---
