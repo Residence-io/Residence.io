@@ -239,6 +239,54 @@ async function handleRequest(req: NextRequest, params: { proxy: string[] }) {
       return NextResponse.json({ member });
     }
 
+    // --- Account creation: POST /api/residents/{id}/account ---
+    if (
+      req.method === 'POST' &&
+      params.proxy[0] === 'residents' &&
+      params.proxy[2] === 'account' &&
+      params.proxy.length === 3
+    ) {
+      const residentId = params.proxy[1];
+      const { username, email, temporaryPassword } = body as Record<
+        string,
+        string
+      >;
+      if (!username || !temporaryPassword)
+        return NextResponse.json(
+          { message: 'Username and temporary password are required.' },
+          { status: 400 },
+        );
+      // Get society_id + resident display name
+      const { data: resRow } = await supabase
+        .from('resident')
+        .select('full_name, society_id')
+        .eq('id', residentId)
+        .maybeSingle();
+      const societyId =
+        resRow?.society_id ??
+        (
+          await supabase
+            .from('department')
+            .select('society_id')
+            .limit(1)
+            .maybeSingle()
+        ).data?.society_id;
+      const { data: account, error: acctErr } = await supabase.rpc(
+        'fn_create_resident_account',
+        {
+          p_resident_id: residentId,
+          p_society_id: societyId,
+          p_username: username,
+          p_email: email ?? '',
+          p_display_name: resRow?.full_name ?? username,
+          p_temp_password: temporaryPassword,
+        },
+      );
+      if (acctErr)
+        return NextResponse.json({ message: acctErr.message }, { status: 500 });
+      return NextResponse.json({ account });
+    }
+
     // --- Residents — full registration ---
     if (path === 'residents' && req.method === 'POST') {
       const {
