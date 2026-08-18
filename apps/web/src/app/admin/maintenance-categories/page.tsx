@@ -5,7 +5,7 @@ import { CategoryForm } from '@/components/tickets/ticket-actions';
 import { getCurrentUser } from '@/lib/api.server';
 export default async function Categories() {
   const [items, user] = await Promise.all([
-    serverApi('/tickets/categories/maintenance'),
+    serverApi<any>('/tickets/categories/maintenance'),
     getCurrentUser(),
   ]);
   return (

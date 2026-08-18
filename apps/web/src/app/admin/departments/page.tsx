@@ -7,7 +7,7 @@ import type { Department } from '@/lib/workforce-types';
 export default async function DepartmentsPage() {
   const [user, departments] = await Promise.all([
     getCurrentUser(),
-    serverApi('/workforce/departments'),
+    serverApi<any>('/workforce/departments'),
   ]);
   return (
     <div className="space-y-7">

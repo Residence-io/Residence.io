@@ -14,7 +14,7 @@ export default async function TransactionPage({
   const { id } = await params;
   const [user, payment] = await Promise.all([
     getCurrentUser(),
-    serverApi(`/payments/${id}`),
+    serverApi<any>(`/payments/${id}`),
   ]);
   return (
     <div className="space-y-7">

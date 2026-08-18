@@ -14,7 +14,7 @@ export default async function MaintenanceDetail({
 }) {
   const { id } = await params;
   const [ticket, user] = await Promise.all([
-    serverApi(`/tickets/maintenance/${id}`),
+    serverApi<any>(`/tickets/maintenance/${id}`),
     getCurrentUser(),
   ]);
   return (

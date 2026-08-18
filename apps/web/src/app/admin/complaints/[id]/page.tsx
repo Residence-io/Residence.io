@@ -13,7 +13,7 @@ export default async function ComplaintDetail({
 }) {
   const { id } = await params;
   const [ticket, user] = await Promise.all([
-    serverApi(`/tickets/complaint/${id}`),
+    serverApi<any>(`/tickets/complaint/${id}`),
     getCurrentUser(),
   ]);
   return (
