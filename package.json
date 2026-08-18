@@ -38,11 +38,13 @@
     "verify": "npm run prisma:format:check && npm run prisma:validate && npm run prisma:generate && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run security:scan"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4",
     "@types/hoist-non-react-statics": "3.3.7",
     "@types/webidl-conversions": "7.0.3",
     "@types/whatwg-url": "13.0.0",
     "prettier": "^3.6.2",
     "supabase": "2.111.0",
+    "tailwindcss": "^4",
     "turbo": "^2.0.0"
   },
   "workspaces": [
