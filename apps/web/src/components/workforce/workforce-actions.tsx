@@ -157,7 +157,7 @@ export function StaffRegistrationForm({
     setDeptBusy(true);
     setDeptError('');
     try {
-      const res = await fetch(`${API_URL}/department`, {
+      const res = await fetch(`${API_URL}/workforce/departments`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -165,12 +165,9 @@ export function StaffRegistrationForm({
           'x-csrf-token': csrfToken,
         },
         body: JSON.stringify({
-          society_id: societyId,
           name: newDeptName.trim(),
-          normalized_name: newDeptName.trim().toUpperCase(),
+          displayOrder: localDepts.length,
           active: true,
-          display_order: localDepts.length,
-          updated_at: new Date().toISOString(),
         }),
       });
       const data = await res.json();
@@ -198,8 +195,8 @@ export function StaffRegistrationForm({
     setDeptBusy(true);
     setDeptError('');
     try {
-      const res = await fetch(`${API_URL}/department/${deptId}`, {
-        method: 'DELETE',
+      const res = await fetch(`${API_URL}/workforce/setup/department/${deptId}/false`, {
+        method: 'POST',
         credentials: 'include',
         headers: { 'x-csrf-token': csrfToken },
       });
@@ -230,7 +227,7 @@ export function StaffRegistrationForm({
     setTitleBusy(true);
     setTitleError('');
     try {
-      const res = await fetch(`${API_URL}/job_title`, {
+      const res = await fetch(`${API_URL}/workforce/job-titles`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -238,12 +235,10 @@ export function StaffRegistrationForm({
           'x-csrf-token': csrfToken,
         },
         body: JSON.stringify({
-          department_id: selectedDeptId,
-          society_id: selectedDept?.societyId,
+          departmentId: selectedDeptId,
           name: newTitleName.trim(),
-          normalized_name: newTitleName.trim().toUpperCase(),
+          displayOrder: jobTitles.length,
           active: true,
-          updated_at: new Date().toISOString(),
         }),
       });
       const data = await res.json();
@@ -264,8 +259,8 @@ export function StaffRegistrationForm({
     setTitleBusy(true);
     setTitleError('');
     try {
-      const res = await fetch(`${API_URL}/job_title/${titleId}`, {
-        method: 'DELETE',
+      const res = await fetch(`${API_URL}/workforce/setup/jobTitle/${titleId}/false`, {
+        method: 'POST',
         credentials: 'include',
         headers: { 'x-csrf-token': csrfToken },
       });

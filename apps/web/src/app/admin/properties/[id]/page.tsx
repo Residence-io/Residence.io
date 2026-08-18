@@ -1,4 +1,4 @@
-import { fetchProperty } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { notFound } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
@@ -13,7 +13,7 @@ export default async function PropertyDetailPage({
   const { id } = await params;
   let property: PropertyRecord;
   try {
-    property = await fetchProperty(id);
+    property = await serverApi<any>(`/properties/${id}`);
   } catch {
     notFound();
   }

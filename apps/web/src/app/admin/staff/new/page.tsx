@@ -1,4 +1,4 @@
-import { fetchDepartments } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { StaffRegistrationForm } from '@/components/workforce/workforce-actions';
@@ -12,7 +12,7 @@ export default async function NewStaffPage() {
   try {
     [user, departments] = await Promise.all([
       getCurrentUser(),
-      fetchDepartments(),
+      serverApi<any[]>('/workforce/departments'),
     ]);
   } catch (err: any) {
     pageError = err?.message ?? String(err);

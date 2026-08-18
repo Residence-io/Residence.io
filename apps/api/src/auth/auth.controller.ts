@@ -58,7 +58,7 @@ export class AuthController {
       ...common,
       httpOnly: false,
     });
-    return { user: result.user };
+    return { user: result.user, supabaseLogin: result.supabaseLogin };
   }
 
   @AllowForcedPasswordChange()

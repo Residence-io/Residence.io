@@ -2,12 +2,8 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { PaymentForm } from '@/components/finance/finance-actions';
-import { getCurrentUser } from '@/lib/api.server';
-import {
-  fetchFinanceDashboard,
-  fetchPayments,
-} from '@/lib/supabase-data.server';
-import type { FinanceDashboard, PaymentDetail } from '@/lib/finance-types';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
+import type { FinanceDashboard } from '@/lib/finance-types';
 export const metadata = { title: 'Payments' };
 export default async function PaymentsPage({
   searchParams,
@@ -16,11 +12,11 @@ export default async function PaymentsPage({
 }) {
   const user = await getCurrentUser();
   const query = await searchParams;
-  const [dashboard, items] = await Promise.all([
-    fetchFinanceDashboard(),
-    fetchPayments(),
+  const [dashboard, paymentPage] = await Promise.all([
+    serverApi<FinanceDashboard>('/finance/dashboard'),
+    serverApi<any>('/payments?pageSize=100'),
   ]);
-  const payments = { items: items as any, total: items.length };
+  const payments = paymentPage;
   return (
     <div className="space-y-7">
       <PageHeader

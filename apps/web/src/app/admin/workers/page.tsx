@@ -1,15 +1,14 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { fetchServiceWorkers } from '@/lib/supabase-data.server';
-import type { WorkerSummary } from '@/lib/workforce-types';
+import { serverApi } from '@/lib/api.server';
 export default async function WorkersPage({
   searchParams,
 }: {
   searchParams: Promise<{ search?: string; status?: string; page?: string }>;
 }) {
   const q = await searchParams;
-  const items = await fetchServiceWorkers();
+  const items = (await serverApi<any>('/workforce/workers?pageSize=100')).items;
   const statusFilter = q.status;
   const searchFilter = q.search?.toLowerCase();
   let filtered = items;

@@ -89,11 +89,11 @@ async function run() {
         email,
         password: tempPassword,
         email_confirm: true,
-        user_metadata: {
-          username: account.username,
-          displayName: account.displayName,
-          societyId: account.societyId,
+        user_metadata: { displayName: account.displayName },
+        app_metadata: {
           legacyId: account.id,
+          societyId: account.societyId,
+          username: account.username,
         },
       });
 

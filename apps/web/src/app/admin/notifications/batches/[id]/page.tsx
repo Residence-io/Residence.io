@@ -1,4 +1,4 @@
-import { fetchNotificationBatch } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
@@ -9,7 +9,7 @@ export default async function BatchPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const batch = await fetchNotificationBatch(id);
+  const batch = await serverApi<any>(`/notifications/batches/${id}`);
   return (
     <div className="space-y-7">
       <PageHeader

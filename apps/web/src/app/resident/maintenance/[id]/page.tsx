@@ -1,4 +1,4 @@
-import { fetchMaintenanceRequest } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import {
@@ -15,7 +15,7 @@ export default async function Maintenance({
 }) {
   const { id } = await params;
   const [ticket, user] = await Promise.all([
-    fetchMaintenanceRequest(id),
+    serverApi<TicketDetail>(`/tickets/maintenance/${id}`),
     getCurrentUser(),
   ]);
   return (

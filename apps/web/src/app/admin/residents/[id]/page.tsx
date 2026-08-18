@@ -1,9 +1,8 @@
-import { fetchResident } from '@/lib/supabase-data.server';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { API_URL } from '@/lib/api-client';
-import { getCurrentUser } from '@/lib/api.server';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 import type { ResidentDetail } from '@/lib/resident-types';
 import { Card } from '@/components/ui/card';
 import { ResidentActions } from '@/components/residents/resident-actions';
@@ -22,12 +21,9 @@ export default async function ResidentDetailPage({
 }) {
   const { id } = await params;
   const notice = await searchParams;
-  let resident: ResidentDetail;
-  try {
-    resident = (await fetchResident(id)) as unknown as ResidentDetail;
-  } catch {
-    notFound();
-  }
+  const resident = await serverApi<ResidentDetail>(`/residents/${id}`).catch(
+    () => notFound(),
+  );
   const user = await getCurrentUser();
   const activeOccupancy = (resident.occupancies ?? []).find(
     (item) => !item.endDate,
@@ -134,7 +130,7 @@ export default async function ResidentDetailPage({
               <p>
                 <span className="text-slate-400">NIC Number</span>
                 <br />
-                {resident.identityNumber ?? 'Not recorded'}
+                {resident.maskedIdentityNumber ?? resident.identityNumber ?? 'Not recorded'}
               </p>
               <p>
                 <span className="text-slate-400">Move-in</span>
@@ -409,7 +405,7 @@ export default async function ResidentDetailPage({
                     </p>
                     <p className="mt-1">{resident.residentNumber}</p>
                     <p className="mt-1">
-                      NIC: {resident.identityNumber ?? 'Not recorded'}
+                      NIC: {resident.maskedIdentityNumber ?? resident.identityNumber ?? 'Not recorded'}
                     </p>
                     <p className="mt-1">
                       {activeOccupancy

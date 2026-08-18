@@ -2,6 +2,7 @@ import {
   Body,
   BadRequestException,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -21,10 +22,13 @@ import type { RequestUser } from '../common/request-context';
 import {
   CreateResidentDto,
   HouseholdMemberDto,
+  HouseholdMemberRemoveDto,
+  HouseholdMemberUpdateDto,
   LifecycleDto,
   MoveOutDto,
   ProvisionAccountDto,
   ResidentQueryDto,
+  SetTemporaryPasswordDto,
   UpdateRelatedDto,
   UpdateResidentDto,
   VehicleDto,
@@ -90,6 +94,38 @@ export class ResidentsController {
     return this.residents
       .ownProfile(user)
       .then((resident) => this.residents.update(user, resident.id, dto, true));
+  }
+
+
+  @Get('me/household-members')
+  ownHousehold(@CurrentUser() user: RequestUser) {
+    return this.residents.ownHouseholdMembers(user);
+  }
+
+  @Post('me/household-members')
+  addOwnHousehold(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: HouseholdMemberDto,
+  ) {
+    return this.residents.addOwnHouseholdMember(user, dto);
+  }
+
+  @Patch('me/household-members/:memberId')
+  updateOwnHousehold(
+    @CurrentUser() user: RequestUser,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() dto: HouseholdMemberUpdateDto,
+  ) {
+    return this.residents.updateOwnHouseholdMember(user, memberId, dto);
+  }
+
+  @Delete('me/household-members/:memberId')
+  removeOwnHousehold(
+    @CurrentUser() user: RequestUser,
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() dto: HouseholdMemberRemoveDto,
+  ) {
+    return this.residents.removeOwnHouseholdMember(user, memberId, dto.version);
   }
 
   @Get(':id')
@@ -241,7 +277,13 @@ export class ResidentsController {
   regenerateResidentTemporaryPassword(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetTemporaryPasswordDto,
   ) {
-    return this.residents.regenerateResidentTemporaryPassword(user, id);
+    return this.residents.regenerateResidentTemporaryPassword(
+      user,
+      id,
+      dto.temporaryPassword,
+      dto.reason,
+    );
   }
 }

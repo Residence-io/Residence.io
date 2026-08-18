@@ -1,4 +1,4 @@
-import { fetchReport } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { API_URL } from '@/lib/api-client';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/states';
@@ -33,7 +33,7 @@ export default async function Page({
       Boolean(entry[1]),
     ),
   );
-  const result = await fetchReport(report, query.toString());
+  const result = await serverApi<any>(`/reports/${report}?${query.toString()}`);
   const columns = result.items.length
     ? Object.keys(result.items[0]).slice(0, 8)
     : [];

@@ -1,12 +1,10 @@
-import { fetchComplaintCategories } from '@/lib/supabase-data.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { CategoryForm } from '@/components/tickets/ticket-actions';
-import { getCurrentUser } from '@/lib/api.server';
-import type { TicketCategory } from '@/lib/ticket-types';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 export default async function Categories() {
   const [items, user] = await Promise.all([
-    fetchComplaintCategories(),
+    serverApi<any[]>('/tickets/categories/complaint'),
     getCurrentUser(),
   ]);
   return (

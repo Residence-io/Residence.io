@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { SalaryRecordActions } from '@/components/workforce/workforce-actions';
 import { getCurrentUser } from '@/lib/api.server';
-import { fetchSalaries } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import type { SalaryRecord } from '@/lib/workforce-types';
 
 export default async function SalaryPeriodPage({
@@ -12,7 +12,7 @@ export default async function SalaryPeriodPage({
 }) {
   const { period } = await params;
   const [records, user] = await Promise.all([
-    fetchSalaries(),
+    serverApi<any>('/workforce/salaries?pageSize=100'),
     getCurrentUser(),
   ]);
   const selected = records.filter(

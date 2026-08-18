@@ -1,10 +1,9 @@
-import { fetchNotificationTemplates } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 
-import type { TemplatePage } from '@/lib/notification-types';
 export default async function TemplatesPage() {
-  const data = await fetchNotificationTemplates();
+  const data = await serverApi<any[]>('/notifications/templates');
   return (
     <div className="space-y-7">
       <PageHeader

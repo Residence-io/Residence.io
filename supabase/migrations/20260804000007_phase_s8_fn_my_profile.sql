@@ -50,15 +50,18 @@ BEGIN
   INTO   v_roles
   FROM   user_role ur
   JOIN   role r ON r.id = ur.role_id
-  WHERE  ur.user_id = v_id;
+  WHERE  ur.user_id = v_id
+    AND  r.active = true;
 
   -- Collect distinct permission codes across all assigned roles
   SELECT array_agg(DISTINCT p.code ORDER BY p.code)
   INTO   v_permissions
   FROM   user_role ur
-  JOIN   role_permission rp ON rp.role_id = ur.role_id
-  JOIN   permission p       ON p.id        = rp.permission_id
-  WHERE  ur.user_id = v_id;
+  JOIN   role r             ON r.id        = ur.role_id
+  JOIN   role_permission rp ON rp.role_id   = r.id
+  JOIN   permission p       ON p.id         = rp.permission_id
+  WHERE  ur.user_id = v_id
+    AND  r.active = true;
 
   RETURN jsonb_build_object(
     'id',                  v_id,

@@ -5,8 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Alert, EmptyState } from '@/components/ui/states';
 import { PageHeader } from '@/components/ui/page-header';
 import { ResidentListDeleteButton } from '@/components/residents/resident-list-delete-button';
-import { getCurrentUser } from '@/lib/api.server';
-import { fetchResidents } from '@/lib/supabase-data.server';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 import type { ResidentPage } from '@/lib/resident-types';
 
 export const metadata = { title: 'Residents' };
@@ -35,22 +34,10 @@ export default async function ResidentsPage({
     if (typeof value === 'string' && value) query.set(key, value);
   }
   query.set('status', status);
+  query.set('pageSize', '50');
   let data: ResidentPage;
   try {
-    const items = await fetchResidents();
-    // Filter and paginate locally since Supabase helper doesn't support complex params yet
-    const page = Number(params.page) || 1;
-    const pageSize = 50;
-    const filtered = items.filter(
-      (item: any) => status === 'ALL' || item.status === status,
-    );
-    data = {
-      items: filtered.slice((page - 1) * pageSize, page * pageSize) as any,
-      total: filtered.length,
-      page,
-      pageSize,
-      totalPages: Math.ceil(filtered.length / pageSize),
-    };
+    data = await serverApi<ResidentPage>(`/residents?${query.toString()}`);
   } catch (error) {
     return (
       <Alert>

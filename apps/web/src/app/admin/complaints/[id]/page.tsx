@@ -1,4 +1,4 @@
-import { fetchComplaint } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import {
@@ -6,7 +6,6 @@ import {
   TicketTransitionForm,
 } from '@/components/tickets/ticket-actions';
 import { getCurrentUser } from '@/lib/api.server';
-import type { TicketDetail } from '@/lib/ticket-types';
 export default async function ComplaintDetail({
   params,
 }: {
@@ -14,7 +13,7 @@ export default async function ComplaintDetail({
 }) {
   const { id } = await params;
   const [ticket, user] = await Promise.all([
-    fetchComplaint(id),
+    serverApi(`/tickets/complaint/${id}`),
     getCurrentUser(),
   ]);
   return (

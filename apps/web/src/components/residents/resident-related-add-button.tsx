@@ -32,13 +32,14 @@ export function ResidentRelatedAddButton({
     const body = member
       ? {
           fullName: form.get('fullName'),
+          relationship: form.get('relationship'),
           age: Number(form.get('age')),
           phone: form.get('phone'),
         }
       : {
           type: form.get('type'),
-          vehicleName: form.get('vehicleName'),
-          numberPlate: form.get('numberPlate'),
+          name: form.get('vehicleName'),
+          registrationNumber: form.get('numberPlate'),
         };
     try {
       const response = await fetch(
@@ -130,6 +131,19 @@ export function ResidentRelatedAddButton({
                       name="fullName"
                       required
                     />
+                  </label>
+                  <label>
+                    Relationship
+                    <select className={field} name="relationship" required>
+                      <option value="">Select relationship</option>
+                      <option value="Spouse">Spouse</option>
+                      <option value="Son">Son</option>
+                      <option value="Daughter">Daughter</option>
+                      <option value="Father">Father</option>
+                      <option value="Mother">Mother</option>
+                      <option value="Sibling">Sibling</option>
+                      <option value="Other">Other</option>
+                    </select>
                   </label>
                   <label>
                     Age

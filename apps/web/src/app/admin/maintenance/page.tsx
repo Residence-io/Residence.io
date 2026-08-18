@@ -1,11 +1,8 @@
+import { serverApi } from '@/lib/api.server';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import {
-  fetchMaintenanceRequests,
-  fetchTicketDashboard,
-} from '@/lib/supabase-data.server';
-import type { TicketDashboard, TicketPage } from '@/lib/ticket-types';
+import type { TicketPage } from '@/lib/ticket-types';
 export default async function Maintenance({
   searchParams,
 }: {
@@ -15,13 +12,13 @@ export default async function Maintenance({
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(q))
     if (value) params.set(key, value);
-  const [items, dashboard] = await Promise.all([
-    fetchMaintenanceRequests(),
-    fetchTicketDashboard(),
+  const [maintenancePage, dashboard] = await Promise.all([
+    serverApi<any>('/tickets/maintenance?pageSize=100'),
+    serverApi<any>('/tickets/dashboard'),
   ]);
   const statusFilter = q.status;
   const searchFilter = q.search?.toLowerCase();
-  let filtered = items;
+  let filtered = maintenancePage.items;
   if (statusFilter)
     filtered = filtered.filter((t: any) => t.status === statusFilter);
   if (searchFilter)

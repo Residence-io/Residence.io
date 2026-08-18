@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { API_URL } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
@@ -13,7 +12,7 @@ export function ForgotPasswordForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    await fetch(`${API_URL}/auth/forgot-password`, {
+    await fetch('/api/auth/forgot-password', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ identifier: data.get('identifier') }),
@@ -38,7 +37,7 @@ export function ResetPasswordForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const response = await fetch(`${API_URL}/auth/reset-password`, {
+    const response = await fetch('/api/auth/reset-password', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -80,7 +79,7 @@ export function ChangePasswordForm({ csrfToken }: { csrfToken: string }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const response = await fetch(`${API_URL}/auth/change-password`, {
+    const response = await fetch('/api/auth/change-password', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -97,6 +96,9 @@ export function ChangePasswordForm({ csrfToken }: { csrfToken: string }) {
       setError(body.message ?? 'Password change failed.');
       return;
     }
+    const { createSupabaseBrowserClient } =
+      await import('@/lib/supabase.client');
+    await createSupabaseBrowserClient().auth.signOut();
     router.replace('/login?password=changed');
     router.refresh();
   }

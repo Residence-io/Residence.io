@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { fetchNotificationDashboard } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import type { NotificationDashboard } from '@/lib/notification-types';
 export default async function NotificationDashboardPage() {
-  const data = (await fetchNotificationDashboard()) as NotificationDashboard;
+  const data = await serverApi<NotificationDashboard>('/notifications/dashboard');
   return (
     <div className="space-y-7">
       <PageHeader

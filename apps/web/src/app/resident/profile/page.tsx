@@ -30,7 +30,7 @@ export default async function ResidentProfilePage() {
           {resident.primaryPhone} · {resident.email ?? 'No email'}
         </p>
         <p className="mt-2 text-sm">
-          NIC: {resident.identityNumber ?? 'Not recorded'}
+          NIC: {resident.maskedIdentityNumber ?? resident.identityNumber ?? 'Not recorded'}
         </p>
       </Card>
       <Card>

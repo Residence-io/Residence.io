@@ -1,4 +1,4 @@
-import { fetchDepartments } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { DepartmentForms } from '@/components/workforce/workforce-actions';
@@ -7,7 +7,7 @@ import type { Department } from '@/lib/workforce-types';
 export default async function DepartmentsPage() {
   const [user, departments] = await Promise.all([
     getCurrentUser(),
-    fetchDepartments(),
+    serverApi('/workforce/departments'),
   ]);
   return (
     <div className="space-y-7">

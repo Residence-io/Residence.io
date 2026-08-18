@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/states';
 import { PageHeader } from '@/components/ui/page-header';
-import { fetchAuditLogs } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 type Audit = {
   id: string;
   action: string;
@@ -26,7 +26,8 @@ export default async function Page({
   }>;
 }) {
   const filters = await searchParams;
-  const items = await fetchAuditLogs();
+  const auditPage = await serverApi<Result>('/administration/audit-logs?pageSize=100');
+  const items = auditPage.items;
 
   let filtered = items;
   if (filters.action)

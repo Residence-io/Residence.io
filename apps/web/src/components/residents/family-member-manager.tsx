@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 export type FamilyMember = {
   id: string;
   fullName: string;
-  age: number;
-  phone: string;
+  relationship: string;
+  age: number | null;
+  phone: string | null;
   version: number;
 };
 
-const emptyForm = { fullName: '', age: '', phone: '' };
+const emptyForm = { fullName: '', relationship: '', age: '', phone: '' };
 const field =
   'min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2';
 
@@ -63,8 +64,9 @@ export function FamilyMemberManager({
     try {
       const body = {
         fullName: form.fullName.trim(),
-        age: Number(form.age),
-        phone: form.phone.trim(),
+        relationship: form.relationship.trim(),
+        age: form.age ? Number(form.age) : undefined,
+        phone: form.phone.trim() || undefined,
         ...(editing ? { version: editing.version } : {}),
       };
       const saved = await request(
@@ -127,8 +129,9 @@ export function FamilyMemberManager({
     setEditing(member);
     setForm({
       fullName: member.fullName,
-      age: String(member.age),
-      phone: member.phone,
+      relationship: member.relationship,
+      age: member.age == null ? '' : String(member.age),
+      phone: member.phone ?? '',
     });
     setMessage('');
   }
@@ -150,7 +153,7 @@ export function FamilyMemberManager({
         <h2 className="font-bold">
           {editing ? 'Edit Family Member' : 'Add Family Member'}
         </h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label>
             Name
             <input
@@ -169,6 +172,30 @@ export function FamilyMemberManager({
             />
           </label>
           <label>
+            Relationship
+            <select
+              className={field}
+              name="relationship"
+              value={form.relationship}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  relationship: event.target.value,
+                }))
+              }
+              required
+            >
+              <option value="">Select relationship</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Son">Son</option>
+              <option value="Daughter">Daughter</option>
+              <option value="Father">Father</option>
+              <option value="Mother">Mother</option>
+              <option value="Sibling">Sibling</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>
             Age
             <input
               className={field}
@@ -181,7 +208,6 @@ export function FamilyMemberManager({
               onChange={(event) =>
                 setForm((current) => ({ ...current, age: event.target.value }))
               }
-              required
             />
           </label>
           <label>
@@ -199,7 +225,6 @@ export function FamilyMemberManager({
                   phone: event.target.value,
                 }))
               }
-              required
             />
           </label>
         </div>
@@ -238,7 +263,7 @@ export function FamilyMemberManager({
                 <div>
                   <p className="font-semibold">{member.fullName}</p>
                   <p className="text-sm text-slate-600">
-                    Age {member.age} · {member.phone}
+                    {member.relationship} · Age {member.age ?? 'not recorded'} · {member.phone ?? 'No phone'}
                   </p>
                 </div>
                 <div className="flex gap-2">

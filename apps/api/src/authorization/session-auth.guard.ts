@@ -13,63 +13,7 @@ import {
   PUBLIC_KEY,
 } from './authorization.decorators';
 import { PrismaService } from '../prisma/prisma.service';
-
-// ─── Minimal HS256 JWT verifier (no external deps) ───────────────────────────
-interface SupabaseJwtPayload {
-  sub: string;
-  aud: string | string[];
-  exp: number;
-  iat: number;
-  app_metadata?: {
-    legacyId?: string;
-    societyId?: string;
-    username?: string;
-    roles?: string[];
-  };
-}
-
-function base64urlDecode(input: string): Buffer {
-  const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64.padEnd(
-    base64.length + ((4 - (base64.length % 4)) % 4),
-    '=',
-  );
-  return Buffer.from(padded, 'base64');
-}
-
-function verifySupabaseJwt(token: string, secret: string): SupabaseJwtPayload {
-  const parts = token.split('.');
-  if (parts.length !== 3) throw new Error('Invalid JWT format');
-
-  const [headerB64, payloadB64, signatureB64] = parts;
-  const signingInput = `${headerB64}.${payloadB64}`;
-
-  // Verify HMAC-SHA-256 signature
-  const expectedSig = createHmac('sha256', secret)
-    .update(signingInput)
-    .digest('base64url');
-  const suppliedSig = Buffer.from(signatureB64, 'base64url').toString(
-    'base64url',
-  );
-
-  const a = Buffer.from(expectedSig);
-  const b = Buffer.from(suppliedSig);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
-    throw new Error('JWT signature verification failed');
-  }
-
-  const payload = JSON.parse(
-    base64urlDecode(payloadB64).toString(),
-  ) as SupabaseJwtPayload;
-
-  // Check expiry
-  if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-    throw new Error('JWT has expired');
-  }
-
-  return payload;
-}
-// ─────────────────────────────────────────────────────────────────────────────
+import { SupabaseAdminService } from '../supabase/supabase-admin.service';
 
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
@@ -77,6 +21,7 @@ export class SessionAuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly supabaseAdmin: SupabaseAdminService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -139,9 +84,11 @@ export class SessionAuthGuard implements CanActivate {
       .map((entry) => entry.role.code);
     const permissions = [
       ...new Set(
-        session.user.roles.flatMap((entry) =>
-          entry.role.permissions.map((grant) => grant.permission.code),
-        ),
+        session.user.roles
+          .filter((entry) => entry.role.active)
+          .flatMap((entry) =>
+            entry.role.permissions.map((grant) => grant.permission.code),
+          ),
       ),
     ];
     const csrfToken =
@@ -176,22 +123,13 @@ export class SessionAuthGuard implements CanActivate {
   ): Promise<true | false | 'invalid'> {
     const token = this.extractBearerToken(request);
     if (!token) return false;
+    if (!this.supabaseAdmin.isEnabled) return 'invalid';
 
-    const jwtSecret = this.config.get<string>('supabase.jwtSecret');
-    if (!jwtSecret) return false;
+    const { data, error } = await this.supabaseAdmin.client.auth.getUser(token);
+    if (error || !data.user) return 'invalid';
 
-    let payload: SupabaseJwtPayload;
-    try {
-      payload = verifySupabaseJwt(token, jwtSecret);
-    } catch {
-      return 'invalid';
-    }
-
-    const legacyId = payload.app_metadata?.legacyId;
-    if (!legacyId) return 'invalid';
-
-    const user = await this.prisma.userAccount.findUnique({
-      where: { id: legacyId },
+    const user = await this.prisma.userAccount.findFirst({
+      where: { authUserId: data.user.id },
       include: {
         roles: {
           include: {
@@ -210,9 +148,11 @@ export class SessionAuthGuard implements CanActivate {
       .map((entry) => entry.role.code);
     const permissions = [
       ...new Set(
-        user.roles.flatMap((entry) =>
-          entry.role.permissions.map((grant) => grant.permission.code),
-        ),
+        user.roles
+          .filter((entry) => entry.role.active)
+          .flatMap((entry) =>
+            entry.role.permissions.map((grant) => grant.permission.code),
+          ),
       ),
     ];
 
@@ -225,9 +165,8 @@ export class SessionAuthGuard implements CanActivate {
       roles,
       permissions,
       csrfToken: '',
-      sessionId: `supabase:${payload.sub}`,
+      sessionId: `supabase:${data.user.id}`,
     };
-    // Flag for CsrfGuard — JWT Bearer is CSRF-safe (no auto-send by browser)
     (request as Request & { supabaseJwt?: boolean }).supabaseJwt = true;
 
     const mayChange = this.reflector.getAllAndOverride<boolean>(

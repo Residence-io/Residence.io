@@ -3,16 +3,13 @@ import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/states';
 import { PageHeader } from '@/components/ui/page-header';
 import { PropertyCreateButton } from '@/components/properties/property-create-button';
-import { getCurrentUser } from '@/lib/api.server';
-import { fetchProperties } from '@/lib/supabase-data.server';
-import type { PropertyRecord } from '@/lib/resident-types';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 
 export default async function PropertiesPage() {
-  const [user, items] = await Promise.all([
+  const [user, data] = await Promise.all([
     getCurrentUser(),
-    fetchProperties(),
+    serverApi<{ items: any[]; total: number }>('/properties?pageSize=100'),
   ]);
-  const data = { items, total: items.length };
   return (
     <div className="space-y-6">
       <PageHeader

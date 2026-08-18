@@ -1,11 +1,11 @@
-import { fetchReportsList } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 
 type Report = { code: string; name: string };
 export default async function Page() {
-  const reports = await fetchReportsList();
+  const reports = await serverApi<any[]>('/reports');
   return (
     <div className="space-y-6">
       <PageHeader

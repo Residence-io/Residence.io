@@ -1,4 +1,4 @@
-import { fetchComplaint } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import {
@@ -14,7 +14,7 @@ export default async function Complaint({
 }) {
   const { id } = await params;
   const [ticket, user] = await Promise.all([
-    fetchComplaint(id),
+    serverApi<TicketDetail>(`/tickets/complaint/${id}`),
     getCurrentUser(),
   ]);
   return (

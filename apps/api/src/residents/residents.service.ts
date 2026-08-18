@@ -19,6 +19,7 @@ import { PrivateStorageService } from '../resident-storage/private-storage.servi
 import {
   CreateResidentDto,
   HouseholdMemberDto,
+  HouseholdMemberUpdateDto,
   LifecycleDto,
   MoveOutDto,
   ProvisionAccountDto,
@@ -385,9 +386,22 @@ export class ResidentsService {
           }
         : {}),
     };
+    const statusFilter: Prisma.ResidentWhereInput =
+      !query.status || query.status === 'ALL'
+        ? {}
+        : query.status === 'PREVIOUS'
+          ? { status: { in: ['MOVED_OUT', 'ARCHIVED'] } }
+          : query.status === 'INACTIVE'
+            ? {
+                OR: [
+                  { status: { in: ['INACTIVE', 'SUSPENDED'] } },
+                  { user: { is: { status: { not: 'ACTIVE' } } } },
+                ],
+              }
+            : { status: query.status as ResidentStatus };
     const where: Prisma.ResidentWhereInput = {
       societyId: actor.societyId,
-      ...(query.status ? { status: query.status as ResidentStatus } : {}),
+      ...statusFilter,
       ...(query.identityNumber
         ? { identitySearchHash: this.identity.searchHash(query.identityNumber) }
         : {}),
@@ -622,6 +636,110 @@ export class ResidentsService {
     return this.detail(actor, id);
   }
 
+  async ownHouseholdMembers(actor: RequestUser) {
+    const resident = await this.prisma.resident.findFirst({
+      where: { societyId: actor.societyId, userId: actor.id },
+      select: { id: true },
+    });
+    if (!resident)
+      throw new NotFoundException(
+        'A resident profile is not linked to this account.',
+      );
+    return this.prisma.householdMember.findMany({
+      where: { residentId: resident.id, status: 'ACTIVE' },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async addOwnHouseholdMember(actor: RequestUser, dto: HouseholdMemberDto) {
+    const resident = await this.prisma.resident.findFirst({
+      where: { societyId: actor.societyId, userId: actor.id },
+      select: { id: true },
+    });
+    if (!resident)
+      throw new NotFoundException(
+        'A resident profile is not linked to this account.',
+      );
+    return this.createHouseholdMember(actor, resident.id, dto);
+  }
+
+  async updateOwnHouseholdMember(
+    actor: RequestUser,
+    memberId: string,
+    dto: HouseholdMemberUpdateDto,
+  ) {
+    const resident = await this.prisma.resident.findFirst({
+      where: { societyId: actor.societyId, userId: actor.id },
+      select: { id: true },
+    });
+    if (!resident)
+      throw new NotFoundException(
+        'A resident profile is not linked to this account.',
+      );
+    const changed = await this.prisma.householdMember.updateMany({
+      where: {
+        id: memberId,
+        residentId: resident.id,
+        status: 'ACTIVE',
+        version: dto.version,
+      },
+      data: {
+        fullName: dto.fullName?.trim(),
+        relationship: dto.relationship?.trim(),
+        age: dto.age,
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+        gender: dto.gender as Gender | undefined,
+        phone: dto.phone?.trim(),
+        emergencyContact: dto.emergencyContact,
+        version: { increment: 1 },
+      },
+    });
+    if (changed.count !== 1)
+      throw new ConflictException(
+        'The family member changed or was not found. Reload and try again.',
+      );
+    await this.audit(actor, 'HOUSEHOLD_MEMBER_CHANGED', resident.id, {
+      householdMemberId: memberId,
+      ownerManaged: true,
+    });
+    return this.prisma.householdMember.findUniqueOrThrow({
+      where: { id: memberId },
+    });
+  }
+
+  async removeOwnHouseholdMember(
+    actor: RequestUser,
+    memberId: string,
+    version: number,
+  ) {
+    const resident = await this.prisma.resident.findFirst({
+      where: { societyId: actor.societyId, userId: actor.id },
+      select: { id: true },
+    });
+    if (!resident)
+      throw new NotFoundException(
+        'A resident profile is not linked to this account.',
+      );
+    const changed = await this.prisma.householdMember.updateMany({
+      where: {
+        id: memberId,
+        residentId: resident.id,
+        status: 'ACTIVE',
+        version,
+      },
+      data: { status: 'INACTIVE', version: { increment: 1 } },
+    });
+    if (changed.count !== 1)
+      throw new ConflictException(
+        'The family member changed or was not found. Reload and try again.',
+      );
+    await this.audit(actor, 'HOUSEHOLD_MEMBER_REMOVED', resident.id, {
+      householdMemberId: memberId,
+      ownerManaged: true,
+    });
+    return { removed: true };
+  }
+
   async addHouseholdMember(
     actor: RequestUser,
     residentId: string,
@@ -629,11 +747,20 @@ export class ResidentsService {
   ) {
     this.requirePermission(actor, 'RESIDENT_UPDATE');
     await this.findScoped(actor, residentId);
+    return this.createHouseholdMember(actor, residentId, dto);
+  }
+
+  private async createHouseholdMember(
+    actor: RequestUser,
+    residentId: string,
+    dto: HouseholdMemberDto,
+  ) {
     const member = await this.prisma.householdMember.create({
       data: {
         residentId,
         fullName: dto.fullName.trim(),
         relationship: dto.relationship.trim(),
+        age: dto.age,
         dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
         gender: dto.gender as Gender,
         phone: dto.phone?.trim(),
@@ -848,7 +975,8 @@ export class ResidentsService {
     if (!resident) throw new NotFoundException('Resident not found.');
     if (resident.userId)
       throw new ConflictException('This resident already has a login account.');
-    const temporaryPassword = this.generateTemporaryPassword();
+    const temporaryPassword =
+      dto.temporaryPassword ?? this.generateTemporaryPassword();
     const passwordHash = await this.passwords.hash(temporaryPassword);
     await this.prisma.$transaction(async (tx) => {
       const residentRole = await tx.role.findUnique({
@@ -942,15 +1070,18 @@ export class ResidentsService {
   async regenerateResidentTemporaryPassword(
     actor: RequestUser,
     residentId: string,
+    requestedPassword: string,
+    reason: string,
   ) {
     const userId = await this.getResidentUserId(actor, residentId);
-    const temporaryPassword = this.generateTemporaryPassword();
+    const temporaryPassword = requestedPassword;
     const passwordHash = await this.passwords.hash(temporaryPassword);
     await this.prisma.userAccount.update({
       where: { id: userId },
       data: {
         passwordHash,
         forcePasswordChange: true,
+        authMigrationState: 'RESET_REQUIRED',
         version: { increment: 1 },
       },
     });
@@ -965,7 +1096,7 @@ export class ResidentsService {
       actor,
       'RESIDENT_TEMPORARY_PASSWORD_REGENERATED',
       residentId,
-      {},
+      { reason },
     );
     return { temporaryPassword };
   }
@@ -992,6 +1123,7 @@ export class ResidentsService {
   private vehicleData(dto: VehicleDto) {
     return {
       type: dto.type.trim(),
+      name: dto.name?.trim(),
       manufacturer: dto.manufacturer?.trim(),
       model: dto.model?.trim(),
       colour: dto.colour?.trim(),
@@ -1039,9 +1171,20 @@ export class ResidentsService {
     delete safe.identityCiphertext;
     delete safe.identitySearchHash;
     delete safe.identityLastFour;
+    const profilePhotograph = resident.documents?.find(
+      (document) =>
+        (document as { category?: string }).category === 'PROFILE_PHOTOGRAPH' &&
+        (document as { status?: string }).status === 'ACTIVE',
+    );
     return {
       ...safe,
       maskedIdentityNumber: identityLastFour ? `••••${identityLastFour}` : null,
+      profilePhotograph: profilePhotograph
+        ? {
+            ...profilePhotograph,
+            sizeBytes: Number(profilePhotograph.sizeBytes),
+          }
+        : null,
       documents: resident.documents?.map((document) => ({
         ...document,
         sizeBytes: Number(document.sizeBytes),

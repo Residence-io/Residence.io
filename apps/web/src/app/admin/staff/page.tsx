@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { fetchStaffMembers } from '@/lib/supabase-data.server';
-import type { StaffSummary } from '@/lib/workforce-types';
+import { serverApi } from '@/lib/api.server';
 
 export default async function StaffPage({
   searchParams,
@@ -10,7 +9,7 @@ export default async function StaffPage({
   searchParams: Promise<{ search?: string; status?: string; page?: string }>;
 }) {
   const query = await searchParams;
-  const items = await fetchStaffMembers();
+  const items = (await serverApi<any>('/workforce/staff?pageSize=100')).items;
   const statusFilter = query.status;
   const searchFilter = query.search?.toLowerCase();
   let filtered = items;

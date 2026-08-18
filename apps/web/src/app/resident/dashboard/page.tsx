@@ -24,7 +24,7 @@ import {
   type ChartDatum,
   type Period,
 } from '@/components/dashboard/dashboard-ui';
-import { fetchResidentDashboard } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 
 type Dashboard = {
   context: {
@@ -73,7 +73,7 @@ export default async function ResidentDashboard({
 }) {
   const query = await searchParams;
   const period = dashboardPeriod(query.period);
-  const data = (await fetchResidentDashboard(period)) as Dashboard;
+  const data = await serverApi<Dashboard>(`/reports/dashboard/me?period=${period}`);
   const currency = new Intl.NumberFormat('en-PK', {
     style: 'currency',
     currency: data.context.currency,

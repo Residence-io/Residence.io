@@ -145,9 +145,11 @@ export class AuthService {
       .map((entry) => entry.role.code);
     const permissions = [
       ...new Set(
-        user.roles.flatMap((entry) =>
-          entry.role.permissions.map((grant) => grant.permission.code),
-        ),
+        user.roles
+          .filter((entry) => entry.role.active)
+          .flatMap((entry) =>
+            entry.role.permissions.map((grant) => grant.permission.code),
+          ),
       ),
     ];
     await this.audit.recordSafely({
@@ -162,12 +164,9 @@ export class AuthService {
     });
 
     // Phase S2: If Supabase Auth is enabled, provision/fetch a Supabase session
-    let supabaseSession: {
-      access_token: string;
-      refresh_token: string;
-    } | null = null;
+    let supabaseLogin: { email: string } | null = null;
     if (this.supabaseAdmin.isEnabled) {
-      supabaseSession = await this.provisionSupabaseSession(user);
+      supabaseLogin = await this.prepareSupabaseLogin(user, dto.password);
     }
 
     return {
@@ -185,41 +184,39 @@ export class AuthService {
         csrfToken,
       },
       sessionId: session.id,
-      // Included when FEATURE_SUPABASE_AUTH=true so frontend can call setSession()
-      supabaseSession,
+      // Included when FEATURE_SUPABASE_AUTH=true so the frontend can create a normal Supabase session.
+      supabaseLogin,
     };
   }
 
   /**
-   * Phase S2 — Creates or retrieves a Supabase Auth session for the given user.
-   * On first login: creates a Supabase user linked to this account.
-   * On subsequent logins: generates an admin session directly.
+   * Phase S2 — Prepares the linked Supabase Auth identity after the legacy
+   * credential/policy checks have succeeded. The browser then performs a normal
+   * Supabase password sign-in so the SSR cookie session is created correctly.
    */
-  private async provisionSupabaseSession(
+  private async prepareSupabaseLogin(
     user: Awaited<ReturnType<PrismaService['userAccount']['findFirst']>>,
-  ): Promise<{ access_token: string; refresh_token: string } | null> {
+    password: string,
+  ): Promise<{ email: string } | null> {
     if (!user) return null;
 
     try {
       let authUserId = (user as any).authUserId as string | null;
+      const email = user.email ?? `${user.username.toLowerCase()}@residence.local`;
+      const appMetadata = {
+        legacyId: user.id,
+        societyId: user.societyId,
+        username: user.username,
+      };
 
-      // First time: create Supabase user
       if (!authUserId) {
-        const email =
-          user.email ?? `${user.username.toLowerCase()}@residence.local`;
-        const tempPassword = randomBytes(24).toString('base64url');
-
         const { data: created, error: createError } =
           await this.supabaseAdmin.admin.createUser({
             email,
-            password: tempPassword,
+            password,
             email_confirm: true,
-            user_metadata: {
-              username: user.username,
-              displayName: user.displayName,
-              societyId: user.societyId,
-              legacyId: user.id,
-            },
+            user_metadata: { displayName: user.displayName },
+            app_metadata: appMetadata,
           });
 
         if (createError || !created.user) {
@@ -230,51 +227,41 @@ export class AuthService {
         }
 
         authUserId = created.user.id;
-
-        // Store the link
         await this.prisma.userAccount.update({
           where: { id: user.id },
           data: {
             authUserId,
-            authMigrationState: 'IMPORTED',
+            authMigrationState: 'VERIFIED',
             authMigratedAt: new Date(),
           } as any,
         });
-      }
-
-      // Generate admin session (bypass email/password)
-      const { data: sessionData, error: sessionError } =
-        await this.supabaseAdmin.admin.createSession({
-          userId: authUserId,
-        } as { userId: string });
-
-      if (sessionError || !sessionData?.session) {
-        this.logger.warn(
-          `Failed to create Supabase session for ${user.username}: ${sessionError?.message}`,
-        );
-        return null;
-      }
-
-      // Mark as verified on first successful session
-      if (
-        (user as any).authMigrationState === 'IMPORTED' ||
-        (user as any).authMigrationState === 'PENDING'
-      ) {
+      } else if ((user as any).authMigrationState !== 'VERIFIED') {
+        const { error: updateError } =
+          await this.supabaseAdmin.admin.updateUserById(authUserId, {
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: { displayName: user.displayName },
+            app_metadata: appMetadata,
+          });
+        if (updateError) {
+          this.logger.warn(
+            `Failed to synchronize Supabase user for ${user.username}: ${updateError.message}`,
+          );
+          return null;
+        }
         await this.prisma.userAccount
           .update({
             where: { id: user.id },
             data: { authMigrationState: 'VERIFIED' } as any,
           })
-          .catch(() => void 0); // non-blocking
+          .catch(() => void 0);
       }
 
-      return {
-        access_token: sessionData.session.access_token,
-        refresh_token: sessionData.session.refresh_token,
-      };
+      return { email };
     } catch (err) {
       this.logger.error(
-        `Supabase session provisioning failed for ${user?.username}: ${String(err)}`,
+        `Supabase login preparation failed for ${user?.username}: ${String(err)}`,
       );
       return null;
     }
@@ -377,6 +364,9 @@ export class AuthService {
           passwordChangedAt: new Date(),
           failedLoginCount: 0,
           lockedUntil: null,
+          ...((record.user as any).authUserId
+            ? { authMigrationState: 'RESET_REQUIRED' as any }
+            : {}),
         },
       });
       await transaction.userSession.updateMany({
@@ -416,6 +406,9 @@ export class AuthService {
           passwordHash,
           forcePasswordChange: false,
           passwordChangedAt: new Date(),
+          ...((account as any).authUserId
+            ? { authMigrationState: 'RESET_REQUIRED' as any }
+            : {}),
         },
       }),
       this.prisma.userSession.updateMany({

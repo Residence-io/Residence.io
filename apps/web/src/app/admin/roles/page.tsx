@@ -1,8 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { RolePermissionEditor } from '@/components/phase7/role-permission-editor';
 import { PageHeader } from '@/components/ui/page-header';
-import { getCurrentUser } from '@/lib/api.server';
-import { fetchRoles, fetchPermissions } from '@/lib/supabase-data.server';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 type Role = {
   id: string;
   code: string;
@@ -20,9 +19,9 @@ type Permission = { id: string; code: string };
 export default async function Page() {
   const user = await getCurrentUser();
   const [roles, permissions] = await Promise.all([
-    fetchRoles(),
+    serverApi<any[]>('/administration/roles'),
     user?.roles.includes('SUPER_ADMINISTRATOR')
-      ? fetchPermissions()
+      ? serverApi<any[]>('/administration/permissions')
       : Promise.resolve([]),
   ]);
   return (

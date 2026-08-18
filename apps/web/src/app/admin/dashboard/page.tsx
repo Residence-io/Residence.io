@@ -1,4 +1,3 @@
-import { fetchDashboard } from '@/lib/supabase-data.server';
 import {
   Banknote,
   BellRing,
@@ -28,7 +27,7 @@ import {
   type ChartDatum,
   type Period,
 } from '@/components/dashboard/dashboard-ui';
-import { getCurrentUser } from '@/lib/api.server';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 
 type Dashboard = {
   context: {
@@ -80,7 +79,7 @@ export default async function AdminDashboard({
   const query = await searchParams;
   const period = dashboardPeriod(query.period);
   const [data, user] = await Promise.all([
-    fetchDashboard(period),
+    serverApi<Dashboard>(`/reports/dashboard/admin?period=${period}`),
     getCurrentUser(),
   ]);
   const permissions = new Set(user?.permissions ?? []);

@@ -1,4 +1,4 @@
-import { fetchPayment } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
@@ -14,7 +14,7 @@ export default async function TransactionPage({
   const { id } = await params;
   const [user, payment] = await Promise.all([
     getCurrentUser(),
-    fetchPayment(id),
+    serverApi(`/payments/${id}`),
   ]);
   return (
     <div className="space-y-7">

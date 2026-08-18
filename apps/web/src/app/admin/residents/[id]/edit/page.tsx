@@ -1,8 +1,7 @@
-import { fetchResident } from '@/lib/supabase-data.server';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/ui/page-header';
 import { ResidentEditForm } from '@/components/residents/resident-edit-form';
-import { getCurrentUser } from '@/lib/api.server';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 import type { ResidentDetail } from '@/lib/resident-types';
 export default async function EditResidentPage({
   params,
@@ -10,12 +9,9 @@ export default async function EditResidentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  let resident: ResidentDetail;
-  try {
-    resident = (await fetchResident(id)) as any;
-  } catch {
-    notFound();
-  }
+  const resident = await serverApi<ResidentDetail>(`/residents/${id}`).catch(
+    () => notFound(),
+  );
   const user = await getCurrentUser();
   return (
     <div className="space-y-6">

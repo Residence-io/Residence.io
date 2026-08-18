@@ -1,4 +1,4 @@
-import { fetchMaintenanceCategories } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { TicketSubmissionForm } from '@/components/tickets/ticket-actions';
@@ -7,7 +7,7 @@ import type { TicketCategory } from '@/lib/ticket-types';
 export default async function NewMaintenance() {
   const [user, categories] = await Promise.all([
     getCurrentUser(),
-    fetchMaintenanceCategories(),
+    serverApi<TicketCategory[]>('/tickets/categories/maintenance'),
   ]);
   return (
     <div className="space-y-7">

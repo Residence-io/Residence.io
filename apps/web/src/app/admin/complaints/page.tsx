@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { fetchComplaints } from '@/lib/supabase-data.server';
+import { serverApi } from '@/lib/api.server';
 import type { TicketPage } from '@/lib/ticket-types';
 export default async function Complaints({
   searchParams,
@@ -12,7 +12,7 @@ export default async function Complaints({
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(q))
     if (value) params.set(key, value);
-  const items = await fetchComplaints();
+  const items = (await serverApi<TicketPage>('/tickets/complaints?pageSize=100')).items;
   const statusFilter = q.status;
   const searchFilter = q.search?.toLowerCase();
   let filtered = items;

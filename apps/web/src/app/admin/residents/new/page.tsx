@@ -1,13 +1,12 @@
-import { fetchProperties } from '@/lib/supabase-data.server';
 import { PageHeader } from '@/components/ui/page-header';
 import { ResidentRegistrationForm } from '@/components/residents/resident-registration-form';
-import { getCurrentUser } from '@/lib/api.server';
+import { getCurrentUser, serverApi } from '@/lib/api.server';
 import type { PropertyRecord } from '@/lib/resident-types';
 
 export default async function NewResidentPage() {
   const [user, properties] = await Promise.all([
     getCurrentUser(),
-    fetchProperties(),
+    serverApi<{ items: PropertyRecord[] }>('/properties?pageSize=100').then((result) => result.items),
   ]);
   return (
     <div className="space-y-6">
