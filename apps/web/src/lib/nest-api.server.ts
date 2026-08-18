@@ -2,8 +2,9 @@ import 'server-only';
 import { createSupabaseServerClient } from './supabase.server';
 
 function apiBaseUrl() {
-  const value = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+  let value = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
   if (!value) throw new Error('NEXT_PUBLIC_API_URL is not configured.');
+  if (!value.endsWith('/api/v1')) value += '/api/v1';
   return value;
 }
 
