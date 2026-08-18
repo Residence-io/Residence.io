@@ -47,7 +47,11 @@ export class ProvisionAccountDto {
   username!: string;
   @IsOptional() @IsEmail() email?: string;
   @IsOptional() @IsBoolean() active = true;
-  @IsOptional() @IsString() @MinLength(8) @MaxLength(200) temporaryPassword?: string;
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(200)
+  temporaryPassword?: string;
 }
 
 export class SetTemporaryPasswordDto {
@@ -69,7 +73,6 @@ export class HouseholdMemberDto {
   @IsOptional() @IsBoolean() emergencyContact = false;
 }
 
-
 export class HouseholdMemberRemoveDto {
   @IsInt() @Min(0) version!: number;
 }
@@ -80,7 +83,9 @@ export class HouseholdMemberUpdateDto {
   @IsOptional() @IsString() @Length(2, 80) relationship?: string;
   @IsOptional() @IsInt() @Min(0) @Max(120) age?: number;
   @IsOptional() @IsDateString() dateOfBirth?: string;
-  @IsOptional() @IsIn(['FEMALE', 'MALE', 'OTHER', 'UNDISCLOSED']) gender?: string;
+  @IsOptional()
+  @IsIn(['FEMALE', 'MALE', 'OTHER', 'UNDISCLOSED'])
+  gender?: string;
   @IsOptional() @Matches(phonePattern) phone?: string;
   @IsOptional() @IsBoolean() emergencyContact?: boolean;
 }
@@ -156,7 +161,15 @@ export class ResidentQueryDto {
   @IsOptional() @IsString() @MaxLength(160) search?: string;
   @IsOptional() @IsIn(['OWNER', 'TENANT']) occupancyType?: 'OWNER' | 'TENANT';
   @IsOptional()
-  @IsIn(['ALL', 'ACTIVE', 'SUSPENDED', 'MOVED_OUT', 'INACTIVE', 'ARCHIVED', 'PREVIOUS'])
+  @IsIn([
+    'ALL',
+    'ACTIVE',
+    'SUSPENDED',
+    'MOVED_OUT',
+    'INACTIVE',
+    'ARCHIVED',
+    'PREVIOUS',
+  ])
   status?: string;
   @IsOptional() @IsString() @MaxLength(80) block?: string;
   @IsOptional()

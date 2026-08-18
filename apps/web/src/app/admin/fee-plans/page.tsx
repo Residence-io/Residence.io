@@ -5,7 +5,10 @@ import { getCurrentUser } from '@/lib/api.server';
 import { serverApi } from '@/lib/api.server';
 import type { FeePlan } from '@/lib/finance-types';
 export default async function FeePlansPage() {
-  const [user, plans] = await Promise.all([getCurrentUser(), serverApi<any[]>('/fee-plans')]);
+  const [user, plans] = await Promise.all([
+    getCurrentUser(),
+    serverApi<any[]>('/fee-plans'),
+  ]);
   return (
     <div className="space-y-7">
       <PageHeader

@@ -42,9 +42,9 @@ export default async function ResidentDetailPage({
     : 'No active house';
   const cardOutdated = Boolean(
     activeCard &&
-    resident.profilePhotograph &&
-    new Date(resident.profilePhotograph.createdAt) >
-      new Date(activeCard.issuedAt),
+      resident.profilePhotograph &&
+      new Date(resident.profilePhotograph.createdAt) >
+        new Date(activeCard.issuedAt),
   );
   const photographVersion = encodeURIComponent(
     resident.profilePhotograph?.createdAt ?? 'none',
@@ -130,7 +130,9 @@ export default async function ResidentDetailPage({
               <p>
                 <span className="text-slate-400">NIC Number</span>
                 <br />
-                {resident.maskedIdentityNumber ?? resident.identityNumber ?? 'Not recorded'}
+                {resident.maskedIdentityNumber ??
+                  resident.identityNumber ??
+                  'Not recorded'}
               </p>
               <p>
                 <span className="text-slate-400">Move-in</span>
@@ -405,7 +407,10 @@ export default async function ResidentDetailPage({
                     </p>
                     <p className="mt-1">{resident.residentNumber}</p>
                     <p className="mt-1">
-                      NIC: {resident.maskedIdentityNumber ?? resident.identityNumber ?? 'Not recorded'}
+                      NIC:{' '}
+                      {resident.maskedIdentityNumber ??
+                        resident.identityNumber ??
+                        'Not recorded'}
                     </p>
                     <p className="mt-1">
                       {activeOccupancy

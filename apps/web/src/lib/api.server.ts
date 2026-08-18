@@ -14,9 +14,7 @@ export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return null;
-    const { data, error } = await supabase
-      .schema('api')
-      .rpc('fn_my_profile');
+    const { data, error } = await supabase.schema('api').rpc('fn_my_profile');
     if (error || !data || data.status !== 'ACTIVE') return null;
     return data as AuthenticatedUser;
   } catch {

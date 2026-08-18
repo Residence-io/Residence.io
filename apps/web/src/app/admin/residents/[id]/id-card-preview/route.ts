@@ -79,7 +79,8 @@ export async function GET(
       );
     return new Response(await cardResponse.arrayBuffer(), {
       headers: {
-        'content-type': cardResponse.headers.get('content-type') || 'application/pdf',
+        'content-type':
+          cardResponse.headers.get('content-type') || 'application/pdf',
         'content-disposition': 'inline',
         'cache-control': 'private, no-store',
       },

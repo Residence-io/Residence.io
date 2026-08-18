@@ -195,11 +195,14 @@ export function StaffRegistrationForm({
     setDeptBusy(true);
     setDeptError('');
     try {
-      const res = await fetch(`${API_URL}/workforce/setup/department/${deptId}/false`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrfToken },
-      });
+      const res = await fetch(
+        `${API_URL}/workforce/setup/department/${deptId}/false`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'x-csrf-token': csrfToken },
+        },
+      );
       if (!res.ok) throw new Error('Failed to delete department');
       setLocalDepts((prev) => prev.filter((d) => d.id !== deptId));
       if (selectedDeptId === deptId) setSelectedDeptId('');
@@ -259,11 +262,14 @@ export function StaffRegistrationForm({
     setTitleBusy(true);
     setTitleError('');
     try {
-      const res = await fetch(`${API_URL}/workforce/setup/jobTitle/${titleId}/false`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrfToken },
-      });
+      const res = await fetch(
+        `${API_URL}/workforce/setup/jobTitle/${titleId}/false`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'x-csrf-token': csrfToken },
+        },
+      );
       if (!res.ok) throw new Error('Failed to delete job title');
       updateDeptTitles(selectedDeptId, (prev) =>
         prev.filter((j) => j.id !== titleId),

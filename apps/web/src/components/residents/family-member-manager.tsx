@@ -46,7 +46,8 @@ export function FamilyMemberManager({
       body: JSON.stringify(body),
     });
     const result = (await response.json().catch(() => ({}))) as
-      FamilyMember | { message?: string; removed?: boolean };
+      | FamilyMember
+      | { message?: string; removed?: boolean };
     if (!response.ok)
       throw new Error(
         'message' in result && result.message
@@ -263,7 +264,8 @@ export function FamilyMemberManager({
                 <div>
                   <p className="font-semibold">{member.fullName}</p>
                   <p className="text-sm text-slate-600">
-                    {member.relationship} · Age {member.age ?? 'not recorded'} · {member.phone ?? 'No phone'}
+                    {member.relationship} · Age {member.age ?? 'not recorded'} ·{' '}
+                    {member.phone ?? 'No phone'}
                   </p>
                 </div>
                 <div className="flex gap-2">

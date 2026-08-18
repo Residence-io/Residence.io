@@ -20,7 +20,11 @@ export async function nestServerApi<T>(
   if (session?.access_token) {
     headers.set('authorization', `Bearer ${session.access_token}`);
   }
-  if (options.body && !(options.body instanceof FormData) && !headers.has('content-type')) {
+  if (
+    options.body &&
+    !(options.body instanceof FormData) &&
+    !headers.has('content-type')
+  ) {
     headers.set('content-type', 'application/json');
   }
 
@@ -33,7 +37,9 @@ export async function nestServerApi<T>(
   if (!response.ok) {
     let message = `Request failed with status ${response.status}.`;
     try {
-      const payload = (await response.json()) as { message?: string | string[] };
+      const payload = (await response.json()) as {
+        message?: string | string[];
+      };
       if (Array.isArray(payload.message)) message = payload.message.join(' ');
       else if (payload.message) message = payload.message;
     } catch {
@@ -44,6 +50,7 @@ export async function nestServerApi<T>(
 
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get('content-type') ?? '';
-  if (contentType.includes('application/json')) return (await response.json()) as T;
+  if (contentType.includes('application/json'))
+    return (await response.json()) as T;
   return (await response.text()) as T;
 }

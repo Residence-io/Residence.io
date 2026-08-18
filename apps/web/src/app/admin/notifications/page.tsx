@@ -4,7 +4,9 @@ import { PageHeader } from '@/components/ui/page-header';
 import { serverApi } from '@/lib/api.server';
 import type { NotificationDashboard } from '@/lib/notification-types';
 export default async function NotificationDashboardPage() {
-  const data = await serverApi<NotificationDashboard>('/notifications/dashboard');
+  const data = await serverApi<NotificationDashboard>(
+    '/notifications/dashboard',
+  );
   return (
     <div className="space-y-7">
       <PageHeader

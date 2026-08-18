@@ -92,7 +92,9 @@ describe('LoginForm', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(await screen.findByText('Invalid username or password.')).toBeVisible();
+    expect(
+      await screen.findByText('Invalid username or password.'),
+    ).toBeVisible();
     expect(signInWithPassword).not.toHaveBeenCalled();
   });
 });

@@ -26,7 +26,9 @@ export default async function Page({
   }>;
 }) {
   const filters = await searchParams;
-  const auditPage = await serverApi<Result>('/administration/audit-logs?pageSize=100');
+  const auditPage = await serverApi<Result>(
+    '/administration/audit-logs?pageSize=100',
+  );
   const items = auditPage.items;
 
   let filtered = items;

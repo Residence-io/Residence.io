@@ -96,7 +96,6 @@ export class ResidentsController {
       .then((resident) => this.residents.update(user, resident.id, dto, true));
   }
 
-
   @Get('me/household-members')
   ownHousehold(@CurrentUser() user: RequestUser) {
     return this.residents.ownHouseholdMembers(user);

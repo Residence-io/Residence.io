@@ -33,8 +33,9 @@ export function LoginForm() {
       );
     }
 
-    const { createSupabaseBrowserClient } =
-      await import('@/lib/supabase.client');
+    const { createSupabaseBrowserClient } = await import(
+      '@/lib/supabase.client'
+    );
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithPassword({
       email: payload.supabaseLogin.email,

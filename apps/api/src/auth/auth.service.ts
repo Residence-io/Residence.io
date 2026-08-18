@@ -202,7 +202,8 @@ export class AuthService {
 
     try {
       let authUserId = (user as any).authUserId as string | null;
-      const email = user.email ?? `${user.username.toLowerCase()}@residence.local`;
+      const email =
+        user.email ?? `${user.username.toLowerCase()}@residence.local`;
       const appMetadata = {
         legacyId: user.id,
         societyId: user.societyId,

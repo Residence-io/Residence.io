@@ -12,7 +12,9 @@ export default async function Complaints({
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(q))
     if (value) params.set(key, value);
-  const items = (await serverApi<TicketPage>('/tickets/complaints?pageSize=100')).items;
+  const items = (
+    await serverApi<TicketPage>('/tickets/complaints?pageSize=100')
+  ).items;
   const statusFilter = q.status;
   const searchFilter = q.search?.toLowerCase();
   let filtered = items;

@@ -6,7 +6,9 @@ import type { PropertyRecord } from '@/lib/resident-types';
 export default async function NewResidentPage() {
   const [user, properties] = await Promise.all([
     getCurrentUser(),
-    serverApi<{ items: PropertyRecord[] }>('/properties?pageSize=100').then((result) => result.items),
+    serverApi<{ items: PropertyRecord[] }>('/properties?pageSize=100').then(
+      (result) => result.items,
+    ),
   ]);
   return (
     <div className="space-y-6">

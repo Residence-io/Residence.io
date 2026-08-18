@@ -73,7 +73,9 @@ export default async function ResidentDashboard({
 }) {
   const query = await searchParams;
   const period = dashboardPeriod(query.period);
-  const data = await serverApi<Dashboard>(`/reports/dashboard/me?period=${period}`);
+  const data = await serverApi<Dashboard>(
+    `/reports/dashboard/me?period=${period}`,
+  );
   const currency = new Intl.NumberFormat('en-PK', {
     style: 'currency',
     currency: data.context.currency,
