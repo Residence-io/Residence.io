@@ -21,9 +21,7 @@ export class CreateFeePlanDto {
   @IsString() @Length(2, 160) name!: string;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
   @IsIn(['SOCIETY_DEFAULT', 'PROPERTY_TYPE', 'UNIT']) scope!:
-    | 'SOCIETY_DEFAULT'
-    | 'PROPERTY_TYPE'
-    | 'UNIT';
+    'SOCIETY_DEFAULT' | 'PROPERTY_TYPE' | 'UNIT';
   @ValidateIf((o: CreateFeePlanDto) => o.scope === 'UNIT')
   @IsUUID()
   unitId?: string;
@@ -37,9 +35,7 @@ export class CreateFeePlanDto {
   @Type(() => Number) @IsInt() @Min(1) @Max(28) dueDay = 10;
   @Type(() => Number) @IsInt() @Min(0) @Max(60) gracePeriodDays = 0;
   @IsIn(['NONE', 'FIXED', 'PERCENTAGE']) lateFeeType:
-    | 'NONE'
-    | 'FIXED'
-    | 'PERCENTAGE' = 'NONE';
+    'NONE' | 'FIXED' | 'PERCENTAGE' = 'NONE';
   @Matches(moneyPattern) lateFeeValue = '0';
   @IsBoolean() lateFeeRecurring = false;
 }

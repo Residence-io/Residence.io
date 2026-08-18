@@ -821,8 +821,7 @@ export type Database = {
           completed_at: string | null;
           delivery_id: string;
           failure_classification:
-            | Database['public']['Enums']['FailureClassification']
-            | null;
+            Database['public']['Enums']['FailureClassification'] | null;
           id: string;
           provider: string;
           safe_response: string | null;
@@ -834,8 +833,7 @@ export type Database = {
           completed_at?: string | null;
           delivery_id: string;
           failure_classification?:
-            | Database['public']['Enums']['FailureClassification']
-            | null;
+            Database['public']['Enums']['FailureClassification'] | null;
           id?: string;
           provider: string;
           safe_response?: string | null;
@@ -847,8 +845,7 @@ export type Database = {
           completed_at?: string | null;
           delivery_id?: string;
           failure_classification?:
-            | Database['public']['Enums']['FailureClassification']
-            | null;
+            Database['public']['Enums']['FailureClassification'] | null;
           id?: string;
           provider?: string;
           safe_response?: string | null;
@@ -1017,8 +1014,7 @@ export type Database = {
           joining_date: string;
           notes: string | null;
           payment_method:
-            | Database['public']['Enums']['SalaryPaymentMethod']
-            | null;
+            Database['public']['Enums']['SalaryPaymentMethod'] | null;
           probation_end_date: string | null;
           staff_id: string;
           supervisor_staff_id: string | null;
@@ -1038,8 +1034,7 @@ export type Database = {
           joining_date: string;
           notes?: string | null;
           payment_method?:
-            | Database['public']['Enums']['SalaryPaymentMethod']
-            | null;
+            Database['public']['Enums']['SalaryPaymentMethod'] | null;
           probation_end_date?: string | null;
           staff_id: string;
           supervisor_staff_id?: string | null;
@@ -1059,8 +1054,7 @@ export type Database = {
           joining_date?: string;
           notes?: string | null;
           payment_method?:
-            | Database['public']['Enums']['SalaryPaymentMethod']
-            | null;
+            Database['public']['Enums']['SalaryPaymentMethod'] | null;
           probation_end_date?: string | null;
           staff_id?: string;
           supervisor_staff_id?: string | null;
@@ -2455,8 +2449,7 @@ export type Database = {
           delivered_at: string | null;
           destination_masked: string | null;
           failure_classification:
-            | Database['public']['Enums']['FailureClassification']
-            | null;
+            Database['public']['Enums']['FailureClassification'] | null;
           failure_reason: string | null;
           id: string;
           idempotency_key: string;
@@ -2474,8 +2467,7 @@ export type Database = {
           delivered_at?: string | null;
           destination_masked?: string | null;
           failure_classification?:
-            | Database['public']['Enums']['FailureClassification']
-            | null;
+            Database['public']['Enums']['FailureClassification'] | null;
           failure_reason?: string | null;
           id?: string;
           idempotency_key: string;
@@ -2493,8 +2485,7 @@ export type Database = {
           delivered_at?: string | null;
           destination_masked?: string | null;
           failure_classification?:
-            | Database['public']['Enums']['FailureClassification']
-            | null;
+            Database['public']['Enums']['FailureClassification'] | null;
           failure_reason?: string | null;
           id?: string;
           idempotency_key?: string;
@@ -5994,11 +5985,7 @@ export type Database = {
     };
     Enums: {
       AccountStatus:
-        | 'INVITED'
-        | 'ACTIVE'
-        | 'SUSPENDED'
-        | 'DEACTIVATED'
-        | 'ARCHIVED';
+        'INVITED' | 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'ARCHIVED';
       AdjustmentType:
         | 'FIXED_DISCOUNT'
         | 'PERCENTAGE_DISCOUNT'
@@ -6014,11 +6001,7 @@ export type Database = {
         | 'ALL_OUTSTANDING'
         | 'ADVANCE';
       AnnouncementStatus:
-        | 'DRAFT'
-        | 'SCHEDULED'
-        | 'PUBLISHED'
-        | 'EXPIRED'
-        | 'CANCELLED';
+        'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'EXPIRED' | 'CANCELLED';
       AppointmentStatus:
         | 'PROPOSED'
         | 'CONFIRMED'
@@ -6062,11 +6045,7 @@ export type Database = {
         | 'CANCELLED'
         | 'EXPIRED';
       DueLineItemType:
-        | 'PRINCIPAL'
-        | 'LATE_FEE'
-        | 'DEBIT_ADJUSTMENT'
-        | 'DISCOUNT'
-        | 'WAIVER';
+        'PRINCIPAL' | 'LATE_FEE' | 'DEBIT_ADJUSTMENT' | 'DISCOUNT' | 'WAIVER';
       DueStatus:
         | 'UPCOMING'
         | 'PENDING'
@@ -6163,10 +6142,7 @@ export type Database = {
         | 'PARTIALLY_REFUNDED'
         | 'REFUNDED';
       ProfileCorrectionStatus:
-        | 'PENDING'
-        | 'APPROVED'
-        | 'REJECTED'
-        | 'CANCELLED';
+        'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
       PropertyType: 'HOUSE' | 'APARTMENT' | 'PLOT' | 'COMMERCIAL' | 'OTHER';
       ProviderTransactionStatus:
         | 'CREATED'
@@ -6187,23 +6163,12 @@ export type Database = {
       ResidentDocumentStatus: 'ACTIVE' | 'REPLACED' | 'ARCHIVED';
       ResidentIDCardStatus: 'ACTIVE' | 'REVOKED' | 'EXPIRED';
       ResidentStatus:
-        | 'ACTIVE'
-        | 'SUSPENDED'
-        | 'MOVED_OUT'
-        | 'INACTIVE'
-        | 'ARCHIVED';
+        'ACTIVE' | 'SUSPENDED' | 'MOVED_OUT' | 'INACTIVE' | 'ARCHIVED';
       SalaryAdjustmentType:
-        | 'ALLOWANCE'
-        | 'DEDUCTION'
-        | 'DEBIT_CORRECTION'
-        | 'CREDIT_CORRECTION';
+        'ALLOWANCE' | 'DEDUCTION' | 'DEBIT_CORRECTION' | 'CREDIT_CORRECTION';
       SalaryFrequency: 'MONTHLY' | 'WEEKLY' | 'DAILY';
       SalaryPaymentMethod:
-        | 'CASH'
-        | 'BANK_TRANSFER'
-        | 'CHEQUE'
-        | 'DIGITAL_TRANSFER'
-        | 'OTHER';
+        'CASH' | 'BANK_TRANSFER' | 'CHEQUE' | 'DIGITAL_TRANSFER' | 'OTHER';
       SalaryPaymentStatus: 'CONFIRMED' | 'REVERSED' | 'PARTIALLY_REVERSED';
       SalaryRecordStatus:
         | 'DRAFT'
@@ -6227,9 +6192,7 @@ export type Database = {
         | 'ARCHIVED';
       TicketAttachmentStatus: 'ACTIVE' | 'ARCHIVED';
       TicketMessageVisibility:
-        | 'RESIDENT_VISIBLE'
-        | 'INTERNAL'
-        | 'WORKER_OPERATIONAL';
+        'RESIDENT_VISIBLE' | 'INTERNAL' | 'WORKER_OPERATIONAL';
       TicketPriority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' | 'EMERGENCY';
       TicketType: 'COMPLAINT' | 'MAINTENANCE';
       UnitStatus: 'AVAILABLE' | 'OCCUPIED' | 'INACTIVE' | 'ARCHIVED';
@@ -6262,12 +6225,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -6289,13 +6252,12 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -6314,13 +6276,12 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -6339,13 +6300,12 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -6358,11 +6318,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }

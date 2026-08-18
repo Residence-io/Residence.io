@@ -46,8 +46,7 @@ export function FamilyMemberManager({
       body: JSON.stringify(body),
     });
     const result = (await response.json().catch(() => ({}))) as
-      | FamilyMember
-      | { message?: string; removed?: boolean };
+      FamilyMember | { message?: string; removed?: boolean };
     if (!response.ok)
       throw new Error(
         'message' in result && result.message

@@ -96,9 +96,8 @@ export function ChangePasswordForm({ csrfToken }: { csrfToken: string }) {
       setError(body.message ?? 'Password change failed.');
       return;
     }
-    const { createSupabaseBrowserClient } = await import(
-      '@/lib/supabase.client'
-    );
+    const { createSupabaseBrowserClient } =
+      await import('@/lib/supabase.client');
     await createSupabaseBrowserClient().auth.signOut();
     router.replace('/login?password=changed');
     router.refresh();

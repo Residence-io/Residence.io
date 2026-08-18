@@ -94,8 +94,7 @@ export class ResidentsService {
         'A tenancy agreement document is required for tenants.',
       );
     let storedTenancy:
-      | Awaited<ReturnType<PrivateStorageService['store']>>
-      | undefined;
+      Awaited<ReturnType<PrivateStorageService['store']>> | undefined;
     const temporaryPassword = dto.account?.createAccount
       ? (dto.account.temporaryPassword ?? this.generateTemporaryPassword())
       : undefined;

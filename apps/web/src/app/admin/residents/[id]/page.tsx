@@ -42,9 +42,9 @@ export default async function ResidentDetailPage({
     : 'No active house';
   const cardOutdated = Boolean(
     activeCard &&
-      resident.profilePhotograph &&
-      new Date(resident.profilePhotograph.createdAt) >
-        new Date(activeCard.issuedAt),
+    resident.profilePhotograph &&
+    new Date(resident.profilePhotograph.createdAt) >
+      new Date(activeCard.issuedAt),
   );
   const photographVersion = encodeURIComponent(
     resident.profilePhotograph?.createdAt ?? 'none',

@@ -16,11 +16,7 @@ export class CreatePropertyDto {
   @IsOptional() @IsString() @MaxLength(160) street?: string;
   @IsString() @Length(1, 80) propertyNumber!: string;
   @IsIn(['HOUSE', 'APARTMENT', 'PLOT', 'COMMERCIAL', 'OTHER']) type!:
-    | 'HOUSE'
-    | 'APARTMENT'
-    | 'PLOT'
-    | 'COMMERCIAL'
-    | 'OTHER';
+    'HOUSE' | 'APARTMENT' | 'PLOT' | 'COMMERCIAL' | 'OTHER';
 }
 
 export class CreateUnitDto {
