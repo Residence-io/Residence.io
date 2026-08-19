@@ -125,7 +125,9 @@ export class SessionAuthGuard implements CanActivate {
     if (!token) return false;
     if (!this.supabaseAdmin.isEnabled) return 'invalid';
 
-    const { data, error } = await (this.supabaseAdmin.client.auth as any).getUser(token);
+    const { data, error } = await (
+      this.supabaseAdmin.client.auth as any
+    ).getUser(token);
     if (error || !data.user) return 'invalid';
 
     const user = await this.prisma.userAccount.findFirst({

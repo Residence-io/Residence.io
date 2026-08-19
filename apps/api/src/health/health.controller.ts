@@ -57,13 +57,16 @@ export class HealthController {
       supabaseAuth: {
         enabled: this.config.get<boolean>('supabase.authEnabled', false),
         urlConfigured: !!this.config.get<string>('supabase.url'),
-        serviceRoleKeyConfigured: !!this.config.get<string>('supabase.serviceRoleKey')
-      }
+        serviceRoleKeyConfigured: !!this.config.get<string>(
+          'supabase.serviceRoleKey',
+        ),
+      },
     };
 
     try {
       await this.prisma.$queryRaw`SELECT 1`;
-      report.connection = 'SUCCESS (Database is reachable and credentials are valid)';
+      report.connection =
+        'SUCCESS (Database is reachable and credentials are valid)';
     } catch (err: any) {
       report.connection = `FAILED: ${err.message}`;
       return report;
@@ -77,8 +80,9 @@ export class HealthController {
       `;
       report.tables = {
         count: tables.length,
-        names: tables.map(t => t.table_name),
-        status: tables.length > 0 ? 'MIGRATED' : 'EMPTY (Migrations did not run!)'
+        names: tables.map((t) => t.table_name),
+        status:
+          tables.length > 0 ? 'MIGRATED' : 'EMPTY (Migrations did not run!)',
       };
     } catch (err: any) {
       report.tables = `FAILED: ${err.message}`;
@@ -88,7 +92,10 @@ export class HealthController {
       const userCount = await this.prisma.userAccount.count();
       report.users = {
         count: userCount,
-        status: userCount > 0 ? 'SEEDED' : 'EMPTY (No users exist, you cannot login until seeded!)'
+        status:
+          userCount > 0
+            ? 'SEEDED'
+            : 'EMPTY (No users exist, you cannot login until seeded!)',
       };
     } catch (err: any) {
       report.users = `FAILED: ${err.message} (Usually means table does not exist)`;

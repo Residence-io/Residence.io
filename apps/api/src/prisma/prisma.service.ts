@@ -20,7 +20,10 @@ export class PrismaService
     try {
       await this.$connect();
     } catch (err) {
-      console.warn('Failed to eagerly connect to database on startup. Queries will fail until connection is resolved.', err);
+      console.warn(
+        'Failed to eagerly connect to database on startup. Queries will fail until connection is resolved.',
+        err,
+      );
     }
   }
 
