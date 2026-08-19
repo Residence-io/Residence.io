@@ -10,9 +10,6 @@ const optionalBooleanValue = z
   .optional()
   .default(false);
 
-const unsafeProductionValue =
-  /(change[-_ ]?me|replace[-_ ]?me|example|placeholder|development|test-only|local-only)/i;
-
 export const environmentSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])

@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 import QRCode from 'qrcode';
 import type { RequestUser } from '../common/request-context';
