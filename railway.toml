@@ -2,7 +2,7 @@
 dockerfilePath = "Dockerfile.api"
 
 [deploy]
-startCommand = "sh -c 'npx prisma migrate deploy --config apps/api/prisma.config.ts && API_PORT=$PORT node apps/api/dist/src/main.js'"
+startCommand = "sh -c 'npx prisma migrate deploy --config apps/api/prisma.config.ts || echo \"Migrations failed, starting server anyway\" ; API_PORT=$PORT node apps/api/dist/src/main.js'"
 healthcheckPath = "/api/v1/health/live"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

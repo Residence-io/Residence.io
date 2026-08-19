@@ -17,7 +17,11 @@ export class PrismaService
   }
 
   async onModuleInit(): Promise<void> {
-    await this.$connect();
+    try {
+      await this.$connect();
+    } catch (err) {
+      console.warn('Failed to eagerly connect to database on startup. Queries will fail until connection is resolved.', err);
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
