@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 import QRCode from 'qrcode';
 import type { RequestUser } from '../common/request-context';
 import { PrismaService } from '../prisma/prisma.service';
