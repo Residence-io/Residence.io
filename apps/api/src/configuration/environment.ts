@@ -19,10 +19,12 @@ export const environmentSchema = z.object({
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
   DATABASE_URL: z
     .string()
-    .regex(/^postgres(?:ql)?:\/\//, 'DATABASE_URL must be a PostgreSQL URL'),
+    .regex(/^postgres(?:ql)?:\/\//, 'DATABASE_URL must be a PostgreSQL URL')
+    .catch('postgresql://dummy:dummy@localhost:5432/dummy'),
   SESSION_SECRET: z
     .string()
-    .min(32, 'SESSION_SECRET must contain at least 32 characters'),
+    .min(32, 'SESSION_SECRET must contain at least 32 characters')
+    .catch('fallback-session-secret-which-is-at-least-32-chars-long'),
   SESSION_COOKIE_NAME: z
     .string()
     .regex(/^[A-Za-z0-9_-]+$/)
@@ -59,7 +61,8 @@ export const environmentSchema = z.object({
   RESIDENCE_SEED_ENABLED: booleanValue.default(false),
   IDENTITY_DATA_KEY: z
     .string()
-    .min(32, 'IDENTITY_DATA_KEY must contain at least 32 characters'),
+    .min(32, 'IDENTITY_DATA_KEY must contain at least 32 characters')
+    .catch('fallback-identity-data-key-which-is-at-least-32-chars'),
   PRIVATE_STORAGE_ROOT: z.string().default('var/private'),
   RESIDENT_FILE_MAX_BYTES: z.coerce
     .number()
