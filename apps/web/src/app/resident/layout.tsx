@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/api.server';
 const navigation: NavigationItem[] = [
   { label: 'Home', href: '/resident/dashboard', available: true },
   { label: 'Payments', href: '/resident/payments', available: true },
-  { label: 'Services', href: '/resident/maintenance', available: true },
+  { label: 'Services', href: '/resident/services', available: true },
   { label: 'Notifications', href: '/resident/notifications', available: true },
   { label: 'My Profile', href: '/resident/profile', available: true },
 ];

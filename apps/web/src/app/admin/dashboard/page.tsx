@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   Banknote,
   BellRing,
@@ -161,6 +162,44 @@ export default async function AdminDashboard({
         to={data.context.to}
         basePath="/admin/dashboard"
       />
+
+      <section aria-labelledby="attention-required" className="mt-8">
+        <h2 id="attention-required" className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <BellRing className="size-5 text-red-600" />
+          Attention Required
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Number(data.outstandingDues) > 0 && (
+            <Link href="/admin/dues" className="block rounded-xl border border-orange-200 bg-orange-50 p-4 hover:bg-orange-100 transition-colors">
+              <p className="text-sm font-medium text-orange-800">Outstanding Dues</p>
+              <p className="mt-1 text-2xl font-bold text-orange-950">{money(data.outstandingDues)}</p>
+            </Link>
+          )}
+          {Number(data.openComplaints) > 0 && (
+            <Link href="/admin/complaints" className="block rounded-xl border border-red-200 bg-red-50 p-4 hover:bg-red-100 transition-colors">
+              <p className="text-sm font-medium text-red-800">Open Complaints</p>
+              <p className="mt-1 text-2xl font-bold text-red-950">{data.openComplaints}</p>
+            </Link>
+          )}
+          {Number(data.pendingMaintenance) > 0 && (
+            <Link href="/admin/maintenance" className="block rounded-xl border border-amber-200 bg-amber-50 p-4 hover:bg-amber-100 transition-colors">
+              <p className="text-sm font-medium text-amber-800">Pending Maintenance</p>
+              <p className="mt-1 text-2xl font-bold text-amber-950">{data.pendingMaintenance}</p>
+            </Link>
+          )}
+          {Number(data.failedDeliveries) > 0 && (
+            <Link href="/admin/communications" className="block rounded-xl border border-rose-200 bg-rose-50 p-4 hover:bg-rose-100 transition-colors">
+              <p className="text-sm font-medium text-rose-800">Failed Messages</p>
+              <p className="mt-1 text-2xl font-bold text-rose-950">{data.failedDeliveries}</p>
+            </Link>
+          )}
+        </div>
+        {Number(data.outstandingDues) === 0 && Number(data.openComplaints) === 0 && Number(data.pendingMaintenance) === 0 && Number(data.failedDeliveries) === 0 && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-sm font-medium text-emerald-800">All caught up! No critical items require your immediate attention.</p>
+          </div>
+        )}
+      </section>
 
       <QuickActions actions={actions} />
 

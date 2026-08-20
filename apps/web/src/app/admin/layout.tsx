@@ -46,20 +46,20 @@ export default async function AdminLayout({
     {
       label: 'FINANCE',
       children: [
-        { label: 'Finance', href: '/admin/payments', available: hasFinance },
+        { label: 'Finance', href: '/admin/finance', available: hasFinance },
       ],
     },
     {
       label: 'OPERATIONS',
       children: [
-        { label: 'Helpdesk', href: '/admin/maintenance', available: hasHelpdesk },
-        { label: 'Workforce', href: '/admin/staff', available: hasWorkforce },
+        { label: 'Helpdesk', href: '/admin/helpdesk', available: hasHelpdesk },
+        { label: 'Workforce', href: '/admin/workforce', available: hasWorkforce },
       ],
     },
     {
       label: 'COMMUNICATION',
       children: [
-        { label: 'Communications', href: '/admin/notifications', available: hasComms },
+        { label: 'Communications', href: '/admin/communications', available: hasComms },
       ],
     },
     {
