@@ -610,8 +610,8 @@ export class ReportsService {
               FROM "payment"
               WHERE "society_id" = ${societyId}::uuid
                 AND "status" = 'CONFIRMED'
-                AND "payment_date" >= ${window.start}
-                AND "payment_date" <= ${window.end}
+                AND "payment_date" >= ${window.start.toISOString()}::timestamptz
+                AND "payment_date" <= ${window.end.toISOString()}::timestamptz
               GROUP BY 1
               ORDER BY 1
             `,
@@ -626,8 +626,8 @@ export class ReportsService {
                      COALESCE(SUM("waived_amount"), 0)::text AS "waived"
               FROM "monthly_due"
               WHERE "society_id" = ${societyId}::uuid
-                AND "due_date" >= ${window.start}::date
-                AND "due_date" <= ${window.end}::date
+                AND "due_date" >= ${window.start.toISOString()}::date
+                AND "due_date" <= ${window.end.toISOString()}::date
               GROUP BY 1
               ORDER BY 1
             `,
@@ -828,8 +828,8 @@ export class ReportsService {
           FROM "payment"
           WHERE "resident_id" = ${resident.id}::uuid
             AND "status" = 'CONFIRMED'
-            AND "payment_date" >= ${window.start}
-            AND "payment_date" <= ${window.end}
+            AND "payment_date" >= ${window.start.toISOString()}::timestamptz
+            AND "payment_date" <= ${window.end.toISOString()}::timestamptz
           GROUP BY 1
           ORDER BY 1
         `,
@@ -841,8 +841,8 @@ export class ReportsService {
                  COALESCE(SUM("paid_amount"), 0)::text AS "paid"
           FROM "monthly_due"
           WHERE "resident_id" = ${resident.id}::uuid
-            AND "due_date" >= ${window.start}::date
-            AND "due_date" <= ${window.end}::date
+            AND "due_date" >= ${window.start.toISOString()}::date
+            AND "due_date" <= ${window.end.toISOString()}::date
           GROUP BY 1
           ORDER BY 1
         `,
