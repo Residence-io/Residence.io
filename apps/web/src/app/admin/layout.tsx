@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { AppShell } from '@/components/shell/app-shell';
+import { AppShell, type NavigationItem } from '@/components/shell/app-shell';
 import { getCurrentUser } from '@/lib/api.server';
 
 const adminRoles = [
@@ -7,16 +7,6 @@ const adminRoles = [
   'ADMINISTRATOR',
   'ACCOUNTS_MANAGER',
   'MAINTENANCE_MANAGER',
-];
-const baseNavigation = [
-  { label: 'Dashboard', href: '/admin/dashboard', available: true },
-  { label: 'Residents', href: '/admin/residents', available: true },
-  { label: 'Payments', href: '/admin/payments' },
-  { label: 'Staff and Workers', href: '/admin/staff' },
-  { label: 'Complaints and Maintenance', href: '/admin/maintenance' },
-  { label: 'Notifications', href: '/admin/notifications' },
-  { label: 'Reports', href: '/admin/reports' },
-  { label: 'Settings', href: '/admin/settings' },
 ];
 
 export default async function AdminLayout({
@@ -27,57 +17,65 @@ export default async function AdminLayout({
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   if (user.forcePasswordChange) redirect('/change-password');
-  if (!user.roles.some((role: any) => adminRoles.includes(role)))
+  if (!user.roles.some((role: string) => adminRoles.includes(role)))
     redirect('/unauthorized');
-  const navigation = baseNavigation.map((item) =>
-    item.label === 'Payments'
-      ? {
-          ...item,
-          available: user.permissions.includes('BILLING_DUE_READ'),
-        }
-      : item.label === 'Staff and Workers'
-        ? {
-            ...item,
-            available: user.permissions.some((permission: any) =>
-              ['STAFF_MANAGE', 'WORKER_MANAGE', 'SALARY_READ'].includes(
-                permission,
-              ),
-            ),
-          }
-        : item.label === 'Complaints and Maintenance'
-          ? {
-              ...item,
-              available: user.permissions.some((permission: any) =>
-                [
-                  'COMPLAINT_READ',
-                  'COMPLAINT_MANAGE',
-                  'MAINTENANCE_READ',
-                  'MAINTENANCE_MANAGE',
-                ].includes(permission),
-              ),
-            }
-          : item.label === 'Notifications'
-            ? {
-                ...item,
-                available: user.permissions.some((permission: any) =>
-                  [
-                    'NOTIFICATION_SEND',
-                    'NOTIFICATION_LOG_READ',
-                    'ANNOUNCEMENT_MANAGE',
-                  ].includes(permission),
-                ),
-              }
-            : item.label === 'Reports'
-              ? { ...item, available: user.permissions.includes('REPORT_READ') }
-              : item.label === 'Settings'
-                ? {
-                    ...item,
-                    available: user.permissions.includes(
-                      'SOCIETY_SETTING_MANAGE',
-                    ),
-                  }
-                : item,
+
+  const perms = user.permissions;
+  const hasFinance = perms.includes('BILLING_DUE_READ');
+  const hasWorkforce = perms.some((p: string) =>
+    ['STAFF_MANAGE', 'WORKER_MANAGE', 'SALARY_READ'].includes(p),
   );
+  const hasHelpdesk = perms.some((p: string) =>
+    ['COMPLAINT_READ', 'COMPLAINT_MANAGE', 'MAINTENANCE_READ', 'MAINTENANCE_MANAGE'].includes(p),
+  );
+  const hasComms = perms.some((p: string) =>
+    ['NOTIFICATION_SEND', 'NOTIFICATION_LOG_READ', 'ANNOUNCEMENT_MANAGE'].includes(p),
+  );
+  const hasReports = perms.includes('REPORT_READ');
+  const hasSettings = perms.includes('SOCIETY_SETTING_MANAGE');
+
+  const navigation: NavigationItem[] = [
+    { label: 'Dashboard', href: '/admin/dashboard', available: true },
+    {
+      label: 'PEOPLE',
+      children: [
+        { label: 'Residents', href: '/admin/residents', available: true },
+        { label: 'Properties', href: '/admin/properties', available: true },
+      ],
+    },
+    {
+      label: 'FINANCE',
+      children: [
+        { label: 'Finance', href: '/admin/payments', available: hasFinance },
+      ],
+    },
+    {
+      label: 'OPERATIONS',
+      children: [
+        { label: 'Helpdesk', href: '/admin/maintenance', available: hasHelpdesk },
+        { label: 'Workforce', href: '/admin/staff', available: hasWorkforce },
+      ],
+    },
+    {
+      label: 'COMMUNICATION',
+      children: [
+        { label: 'Communications', href: '/admin/notifications', available: hasComms },
+      ],
+    },
+    {
+      label: 'INSIGHTS',
+      children: [
+        { label: 'Reports', href: '/admin/reports', available: hasReports },
+      ],
+    },
+    {
+      label: 'SYSTEM',
+      children: [
+        { label: 'Administration', href: '/admin/settings', available: hasSettings },
+      ],
+    },
+  ];
+
   return (
     <AppShell user={user} portal="Administration" navigation={navigation}>
       {children}
