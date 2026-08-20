@@ -14,13 +14,20 @@ export default function ServicesOverview() {
         <Card>
           <h2 className="text-xl font-bold mb-2">Complaints</h2>
           <p className="text-sm text-slate-500 mb-6">
-            Report an issue regarding security, neighbors, cleanliness, or society rules.
+            Report an issue regarding security, neighbors, cleanliness, or
+            society rules.
           </p>
           <div className="flex gap-3">
-            <Link className="rounded-xl bg-blue-600 px-4 py-2 text-white font-medium text-sm" href="/resident/complaints/new">
+            <Link
+              className="rounded-xl bg-blue-600 px-4 py-2 text-white font-medium text-sm"
+              href="/resident/complaints/new"
+            >
               New Complaint
             </Link>
-            <Link className="rounded-xl border border-slate-300 px-4 py-2 text-slate-700 font-medium text-sm" href="/resident/complaints">
+            <Link
+              className="rounded-xl border border-slate-300 px-4 py-2 text-slate-700 font-medium text-sm"
+              href="/resident/complaints"
+            >
               View History
             </Link>
           </div>
@@ -29,13 +36,20 @@ export default function ServicesOverview() {
         <Card>
           <h2 className="text-xl font-bold mb-2">Maintenance</h2>
           <p className="text-sm text-slate-500 mb-6">
-            Request repairs or technical assistance for your unit or common areas.
+            Request repairs or technical assistance for your unit or common
+            areas.
           </p>
           <div className="flex gap-3">
-            <Link className="rounded-xl bg-blue-600 px-4 py-2 text-white font-medium text-sm" href="/resident/maintenance/new">
+            <Link
+              className="rounded-xl bg-blue-600 px-4 py-2 text-white font-medium text-sm"
+              href="/resident/maintenance/new"
+            >
               Request Maintenance
             </Link>
-            <Link className="rounded-xl border border-slate-300 px-4 py-2 text-slate-700 font-medium text-sm" href="/resident/maintenance">
+            <Link
+              className="rounded-xl border border-slate-300 px-4 py-2 text-slate-700 font-medium text-sm"
+              href="/resident/maintenance"
+            >
               View History
             </Link>
           </div>

@@ -26,10 +26,19 @@ export default async function AdminLayout({
     ['STAFF_MANAGE', 'WORKER_MANAGE', 'SALARY_READ'].includes(p),
   );
   const hasHelpdesk = perms.some((p: string) =>
-    ['COMPLAINT_READ', 'COMPLAINT_MANAGE', 'MAINTENANCE_READ', 'MAINTENANCE_MANAGE'].includes(p),
+    [
+      'COMPLAINT_READ',
+      'COMPLAINT_MANAGE',
+      'MAINTENANCE_READ',
+      'MAINTENANCE_MANAGE',
+    ].includes(p),
   );
   const hasComms = perms.some((p: string) =>
-    ['NOTIFICATION_SEND', 'NOTIFICATION_LOG_READ', 'ANNOUNCEMENT_MANAGE'].includes(p),
+    [
+      'NOTIFICATION_SEND',
+      'NOTIFICATION_LOG_READ',
+      'ANNOUNCEMENT_MANAGE',
+    ].includes(p),
   );
   const hasReports = perms.includes('REPORT_READ');
   const hasSettings = perms.includes('SOCIETY_SETTING_MANAGE');
@@ -53,13 +62,21 @@ export default async function AdminLayout({
       label: 'OPERATIONS',
       children: [
         { label: 'Helpdesk', href: '/admin/helpdesk', available: hasHelpdesk },
-        { label: 'Workforce', href: '/admin/workforce', available: hasWorkforce },
+        {
+          label: 'Workforce',
+          href: '/admin/workforce',
+          available: hasWorkforce,
+        },
       ],
     },
     {
       label: 'COMMUNICATION',
       children: [
-        { label: 'Communications', href: '/admin/communications', available: hasComms },
+        {
+          label: 'Communications',
+          href: '/admin/communications',
+          available: hasComms,
+        },
       ],
     },
     {
@@ -71,7 +88,11 @@ export default async function AdminLayout({
     {
       label: 'SYSTEM',
       children: [
-        { label: 'Administration', href: '/admin/settings', available: hasSettings },
+        {
+          label: 'Administration',
+          href: '/admin/settings',
+          available: hasSettings,
+        },
       ],
     },
   ];

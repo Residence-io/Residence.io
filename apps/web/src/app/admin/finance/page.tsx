@@ -44,16 +44,25 @@ export default async function PaymentsPage({
           <Link className="font-semibold text-blue-700" href="/admin/dues">
             Dues
           </Link>
-          <Link className="font-semibold text-blue-700" href="/admin/dues/generate">
+          <Link
+            className="font-semibold text-blue-700"
+            href="/admin/dues/generate"
+          >
             Generate dues
           </Link>
           <Link className="font-semibold text-blue-700" href="/admin/fee-plans">
             Fee plans
           </Link>
-          <Link className="font-semibold text-blue-700" href="/admin/payments/verification">
+          <Link
+            className="font-semibold text-blue-700"
+            href="/admin/payments/verification"
+          >
             Verification queue
           </Link>
-          <Link className="font-semibold text-blue-700" href="/admin/reports/financial">
+          <Link
+            className="font-semibold text-blue-700"
+            href="/admin/reports/financial"
+          >
             Ledger & Reports
           </Link>
         </div>

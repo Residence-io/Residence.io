@@ -19,7 +19,7 @@ export default async function ResidentLayout({
   if (!user) redirect('/login');
   if (user.forcePasswordChange) redirect('/change-password');
   if (!user.roles.includes('RESIDENT')) redirect('/unauthorized');
-  
+
   return (
     <AppShell user={user} portal="Resident" navigation={navigation}>
       {children}
