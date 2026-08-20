@@ -815,7 +815,7 @@ export class ReportsService {
       p.maintenanceRequest.count({
         where: {
           residentId: resident.id,
-          status: { notIn: ['CLOSED', 'CANCELLED', 'REJECTED'] },
+          status: { notIn: ['COMPLETED', 'CANCELLED'] },
         },
       }),
       p.notificationRecipient.count({
