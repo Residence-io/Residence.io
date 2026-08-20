@@ -5,9 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider   = "postgresql"
+  provider = "postgresql"
 }
-
 
 enum SocietyStatus {
   ACTIVE
@@ -560,9 +559,9 @@ model UserAccount {
   version             Int           @default(0)
 
   // Phase S2 — Supabase Auth link
-  authUserId          String?              @unique @map("auth_user_id") @db.Uuid
-  authMigrationState  AuthMigrationState   @default(PENDING) @map("auth_migration_state")
-  authMigratedAt      DateTime?            @map("auth_migrated_at") @db.Timestamptz(6)
+  authUserId         String?            @unique @map("auth_user_id") @db.Uuid
+  authMigrationState AuthMigrationState @default(PENDING) @map("auth_migration_state")
+  authMigratedAt     DateTime?          @map("auth_migrated_at") @db.Timestamptz(6)
 
   society                    Society                    @relation(fields: [societyId], references: [id], onDelete: Restrict)
   roles                      UserRole[]
