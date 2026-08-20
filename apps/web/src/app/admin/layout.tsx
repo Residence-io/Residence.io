@@ -40,6 +40,7 @@ export default async function AdminLayout({
       'ANNOUNCEMENT_MANAGE',
     ].includes(p),
   );
+  const hasVisitors = perms.includes('VISITOR_ADMIN');
   const hasReports = perms.includes('REPORT_READ');
   const hasSettings = perms.includes('SOCIETY_SETTING_MANAGE');
 
@@ -62,6 +63,7 @@ export default async function AdminLayout({
       label: 'OPERATIONS',
       children: [
         { label: 'Helpdesk', href: '/admin/helpdesk', available: hasHelpdesk },
+        { label: 'Visitors', href: '/admin/visitors', available: hasVisitors },
         {
           label: 'Workforce',
           href: '/admin/workforce',

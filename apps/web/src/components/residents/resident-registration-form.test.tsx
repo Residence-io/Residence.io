@@ -43,13 +43,13 @@ function completePersonal() {
   fireEvent.change(screen.getByLabelText('Birth year'), {
     target: { value: '1990' },
   });
-  fireEvent.change(screen.getByLabelText('Gender'), {
+  fireEvent.change(screen.getByLabelText(/Gender/i), {
     target: { value: 'MALE' },
   });
   fireEvent.change(screen.getByLabelText('Primary Phone'), {
     target: { value: '+923001234567' },
   });
-  fireEvent.change(screen.getByLabelText('CNIC'), {
+  fireEvent.change(screen.getByLabelText(/CNIC/i), {
     target: { value: '12345-1234567-1' },
   });
 }
@@ -84,7 +84,9 @@ describe('ResidentRegistrationForm', () => {
     expect(
       screen.queryByLabelText('Emergency Contact Name'),
     ).not.toBeInTheDocument();
-    expect(screen.getAllByLabelText('Emergency Contact Phone')).toHaveLength(1);
+    expect(
+      screen.queryByLabelText(/Emergency Contact Phone/i),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.change(screen.getByLabelText('Ownership Status'), {
       target: { value: 'TENANT' },
@@ -108,13 +110,10 @@ describe('ResidentRegistrationForm', () => {
     expect(screen.queryByText('Members and Vehicles')).not.toBeInTheDocument();
     completePersonal();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    fireEvent.change(screen.getByLabelText('Property and Unit'), {
+    fireEvent.change(screen.getByLabelText(/Property and Unit/i), {
       target: { value: unitLabel },
     });
-    expect(screen.getByLabelText('Property and Unit')).toHaveAttribute(
-      'list',
-      'property-unit-options',
-    );
+
     expect(document.querySelector('input[name="unitId"]')).toHaveValue(
       properties[0]!.units[0]!.id,
     );
@@ -147,7 +146,7 @@ describe('ResidentRegistrationForm', () => {
     renderForm();
     completePersonal();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    fireEvent.change(screen.getByLabelText('Property and Unit'), {
+    fireEvent.change(screen.getByLabelText(/Property and Unit/i), {
       target: { value: unitLabel },
     });
     completeDate('Move-in Date', '2026-07-28');

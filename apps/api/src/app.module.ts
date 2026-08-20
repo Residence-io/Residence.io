@@ -26,6 +26,7 @@ import { TicketsModule } from './tickets/tickets.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdministrationModule } from './administration/administration.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { VisitorsModule } from './visitors/visitors.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     TicketsModule,
     NotificationsModule,
     AdministrationModule,
+    VisitorsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

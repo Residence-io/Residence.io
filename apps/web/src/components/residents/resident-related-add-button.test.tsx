@@ -39,8 +39,8 @@ describe('ResidentRelatedAddButton vehicle form', () => {
     const [, options] = request.mock.calls[0]!;
     expect(JSON.parse(String(options?.body))).toEqual({
       type: 'CAR',
-      vehicleName: 'Civic',
-      numberPlate: 'ABC-123',
+      name: 'Civic',
+      registrationNumber: 'ABC-123',
     });
   });
 });

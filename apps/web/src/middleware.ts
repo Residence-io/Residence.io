@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/resident') ||
+    pathname.startsWith('/guard') ||
     pathname.startsWith('/change-password');
 
   const isAuthRoute =

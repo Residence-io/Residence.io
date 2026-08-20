@@ -479,6 +479,17 @@ enum ProfileCorrectionStatus {
   CANCELLED
 }
 
+enum VisitorStatus {
+  INVITED
+  WAITING_APPROVAL
+  APPROVED
+  REJECTED
+  CHECKED_IN
+  CHECKED_OUT
+  EXPIRED
+  CANCELLED
+}
+
 model Society {
   id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug       String        @unique @db.VarChar(80)
@@ -532,6 +543,8 @@ model Society {
   notificationPreferences NotificationPreference[]
   financialSettings       FinancialSettingPeriod[]
   profileCorrections      ProfileCorrectionRequest[]
+  visitorPasses           VisitorPass[]
+  visitorCheckIns         VisitorCheckIn[]
 
   @@index([status])
   @@map("society")
@@ -585,6 +598,7 @@ model UserAccount {
   profileCorrectionRequests  ProfileCorrectionRequest[] @relation("ProfileCorrectionRequester")
   resolvedProfileCorrections ProfileCorrectionRequest[] @relation("ProfileCorrectionResolver")
   createdFinancialSettings   FinancialSettingPeriod[]   @relation("FinancialSettingCreator")
+  guardCheckIns              VisitorCheckIn[]           @relation("GuardCheckIns")
 
   @@index([societyId, status])
   @@map("user_account")
@@ -790,6 +804,7 @@ model Unit {
   feePlans            FeePlan[]
   complaints          Complaint[]
   maintenanceRequests MaintenanceRequest[]
+  visitorPasses       VisitorPass[]
 
   @@unique([propertyId, normalizedUnitNumber], name: "uk_unit_property_number")
   @@index([propertyId, status])
@@ -840,6 +855,7 @@ model Resident {
   maintenanceRequests MaintenanceRequest[]
   serviceRatings      ServiceRating[]
   correctionRequests  ProfileCorrectionRequest[]
+  visitorPasses       VisitorPass[]
 
   @@unique([societyId, residentNumber], name: "uk_resident_society_number")
   @@index([societyId, status, residentNumber])
@@ -2689,4 +2705,62 @@ model ProfileCorrectionRequest {
   @@index([societyId, status, createdAt])
   @@index([residentId, createdAt])
   @@map("profile_correction_request")
+}
+
+model VisitorPass {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId      String        @map("society_id") @db.Uuid
+  residentId     String        @map("resident_id") @db.Uuid
+  unitId         String?       @map("unit_id") @db.Uuid
+  visitorName    String        @map("visitor_name") @db.VarChar(160)
+  visitorPhone   String        @map("visitor_phone") @db.VarChar(30)
+  visitorCnic    String?       @map("visitor_cnic") @db.VarChar(30)
+  purpose        String        @db.VarChar(300)
+  vehicleNumber  String?       @map("vehicle_number") @db.VarChar(50)
+  numberOfGuests Int           @default(1) @map("number_of_guests")
+  visitDate      DateTime      @map("visit_date") @db.Date
+  windowStart    DateTime?     @map("window_start") @db.Time
+  windowEnd      DateTime?     @map("window_end") @db.Time
+  passCode       String        @unique @map("pass_code") @db.VarChar(30)
+  qrToken        String        @unique @map("qr_token") @db.VarChar(128)
+  status         VisitorStatus @default(INVITED)
+  isRecurring    Boolean       @default(false) @map("is_recurring")
+  recurringDays  String?       @map("recurring_days") @db.VarChar(50)
+  recurringUntil DateTime?     @map("recurring_until") @db.Date
+  notes          String?       @db.VarChar(500)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version        Int           @default(0)
+
+  society  Society          @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident Resident         @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  unit     Unit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  checkIns VisitorCheckIn[]
+
+  @@index([societyId, visitDate])
+  @@index([residentId, visitDate])
+  @@index([status, visitDate])
+  @@map("visitor_pass")
+}
+
+model VisitorCheckIn {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId     String    @map("society_id") @db.Uuid
+  visitorPassId String    @map("visitor_pass_id") @db.Uuid
+  gate          String    @db.VarChar(100)
+  checkedInAt   DateTime  @default(now()) @map("checked_in_at") @db.Timestamptz(6)
+  checkedOutAt  DateTime? @map("checked_out_at") @db.Timestamptz(6)
+  guardUserId   String    @map("guard_user_id") @db.Uuid
+  vehicleNumber String?   @map("vehicle_number") @db.VarChar(50)
+  notes         String?   @db.VarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  society     Society     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  visitorPass VisitorPass @relation(fields: [visitorPassId], references: [id], onDelete: Restrict)
+  guardUser   UserAccount @relation("GuardCheckIns", fields: [guardUserId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, checkedInAt])
+  @@index([visitorPassId])
+  @@index([guardUserId])
+  @@map("visitor_check_in")
 }

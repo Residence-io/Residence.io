@@ -56,7 +56,7 @@ export class SupabaseAdminService implements OnModuleInit {
    * Access the GoTrueAdminApi (user management, session creation, etc.)
    * Only available when the client is initialized with a service_role key.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   get admin(): any {
     return (this.client.auth as unknown as { admin: unknown }).admin;
   }

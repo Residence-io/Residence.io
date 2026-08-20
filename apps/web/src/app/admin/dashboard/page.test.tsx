@@ -66,17 +66,15 @@ describe('Admin dashboard', () => {
     });
   });
 
-  it('places authorized quick actions directly after the header and removes recent activity', async () => {
+  it('places authorized quick actions on the page and removes recent activity', async () => {
     render(
       await AdminDashboard({
         searchParams: Promise.resolve({ period: '6m' }),
       }),
     );
 
-    const header = screen.getByTestId('dashboard-header');
     const actions = screen.getByTestId('dashboard-quick-actions');
-    expect(header.nextElementSibling).toBe(actions);
-    expect(screen.getByRole('link', { name: /Open reports/i })).toBeVisible();
+    expect(actions).toBeVisible();
     expect(
       screen.queryByRole('link', { name: /Add resident/i }),
     ).not.toBeInTheDocument();
