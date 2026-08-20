@@ -63,7 +63,11 @@ export default async function AdminLayout({
       label: 'OPERATIONS',
       children: [
         { label: 'Helpdesk', href: '/admin/helpdesk', available: hasHelpdesk },
-        { label: 'Visitors', href: '/admin/visitors', available: hasVisitors },
+        {
+          label: 'Security & Gate',
+          href: '/admin/security/visitors',
+          available: hasVisitors,
+        },
         {
           label: 'Workforce',
           href: '/admin/workforce',

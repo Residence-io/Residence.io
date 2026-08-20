@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ShieldCheck, LogOut, Home, Users } from 'lucide-react';
+import { ShieldCheck, LogOut, Home, Users, Package, Car } from 'lucide-react';
 import { LogoutButton } from '@/components/shell/logout-button';
 
 export const metadata: Metadata = {
@@ -49,6 +49,24 @@ export default async function GuardLayout({
           <Users className="size-6" />
           <span className="text-[10px] font-bold uppercase tracking-wider">
             Inside
+          </span>
+        </Link>
+        <Link
+          href="/guard/deliveries"
+          className="flex flex-col items-center gap-1 p-2 text-slate-500 hover:text-blue-700"
+        >
+          <Package className="size-6" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">
+            Parcels
+          </span>
+        </Link>
+        <Link
+          href="/guard/vehicles"
+          className="flex flex-col items-center gap-1 p-2 text-slate-500 hover:text-blue-700"
+        >
+          <Car className="size-6" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">
+            Vehicles
           </span>
         </Link>
       </nav>

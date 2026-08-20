@@ -545,6 +545,9 @@ model Society {
   profileCorrections      ProfileCorrectionRequest[]
   visitorPasses           VisitorPass[]
   visitorCheckIns         VisitorCheckIn[]
+  parcels                 Parcel[]
+  parkingSpaces           ParkingSpace[]
+  parkingPermits          ParkingPermit[]
 
   @@index([status])
   @@map("society")
@@ -599,6 +602,8 @@ model UserAccount {
   resolvedProfileCorrections ProfileCorrectionRequest[] @relation("ProfileCorrectionResolver")
   createdFinancialSettings   FinancialSettingPeriod[]   @relation("FinancialSettingCreator")
   guardCheckIns              VisitorCheckIn[]           @relation("GuardCheckIns")
+  guardParcels               Parcel[]                   @relation("GuardParcels")
+  issuedPermits              ParkingPermit[]            @relation("IssuedPermits")
 
   @@index([societyId, status])
   @@map("user_account")
@@ -781,6 +786,7 @@ model Property {
   units               Unit[]
   complaints          Complaint[]
   maintenanceRequests MaintenanceRequest[]
+  parkingSpaces       ParkingSpace[]
 
   @@unique([societyId, normalizedAddressKey], name: "uk_property_society_address")
   @@index([societyId, block, active])
@@ -805,6 +811,8 @@ model Unit {
   complaints          Complaint[]
   maintenanceRequests MaintenanceRequest[]
   visitorPasses       VisitorPass[]
+  parcels             Parcel[]
+  parkingSpaces       ParkingSpace[]
 
   @@unique([propertyId, normalizedUnitNumber], name: "uk_unit_property_number")
   @@index([propertyId, status])
@@ -856,6 +864,8 @@ model Resident {
   serviceRatings      ServiceRating[]
   correctionRequests  ProfileCorrectionRequest[]
   visitorPasses       VisitorPass[]
+  parcels             Parcel[]
+  parkingPermits      ParkingPermit[]
 
   @@unique([societyId, residentNumber], name: "uk_resident_society_number")
   @@index([societyId, status, residentNumber])
@@ -916,23 +926,24 @@ model HouseholdMember {
 }
 
 model Vehicle {
-  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  societyId                    String    @map("society_id") @db.Uuid
-  residentId                   String    @map("resident_id") @db.Uuid
-  type                         String    @db.VarChar(80)
-  name                         String?   @db.VarChar(100)
-  manufacturer                 String?   @db.VarChar(100)
-  model                        String?   @db.VarChar(100)
-  colour                       String?   @db.VarChar(60)
-  registrationNumber           String    @map("registration_number") @db.VarChar(40)
-  normalizedRegistrationNumber String    @map("normalized_registration_number") @db.VarChar(40)
-  parkingPermitNumber          String?   @map("parking_permit_number") @db.VarChar(80)
-  parkingLocation              String?   @map("parking_location") @db.VarChar(160)
-  active                       Boolean   @default(true)
-  deactivatedAt                DateTime? @map("deactivated_at") @db.Timestamptz(6)
-  createdAt                    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  version                      Int       @default(0)
+  id                           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId                    String          @map("society_id") @db.Uuid
+  residentId                   String          @map("resident_id") @db.Uuid
+  type                         String          @db.VarChar(80)
+  name                         String?         @db.VarChar(100)
+  manufacturer                 String?         @db.VarChar(100)
+  model                        String?         @db.VarChar(100)
+  colour                       String?         @db.VarChar(60)
+  registrationNumber           String          @map("registration_number") @db.VarChar(40)
+  normalizedRegistrationNumber String          @map("normalized_registration_number") @db.VarChar(40)
+  parkingPermitNumber          String?         @map("parking_permit_number") @db.VarChar(80)
+  parkingLocation              String?         @map("parking_location") @db.VarChar(160)
+  permits                      ParkingPermit[]
+  active                       Boolean         @default(true)
+  deactivatedAt                DateTime?       @map("deactivated_at") @db.Timestamptz(6)
+  createdAt                    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                      Int             @default(0)
 
   society  Society  @relation(fields: [societyId], references: [id], onDelete: Restrict)
   resident Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
@@ -2763,4 +2774,111 @@ model VisitorCheckIn {
   @@index([visitorPassId])
   @@index([guardUserId])
   @@map("visitor_check_in")
+}
+
+enum ParcelStatus {
+  RECEIVED
+  WAITING_COLLECTION
+  COLLECTED
+  RETURNED
+  CANCELLED
+}
+
+model Parcel {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId      String       @map("society_id") @db.Uuid
+  residentId     String       @map("resident_id") @db.Uuid
+  unitId         String?      @map("unit_id") @db.Uuid
+  courierName    String       @map("courier_name") @db.VarChar(120)
+  trackingNumber String?      @map("tracking_number") @db.VarChar(120)
+  description    String?      @db.VarChar(500)
+  packageType    String?      @map("package_type") @db.VarChar(100)
+  status         ParcelStatus @default(RECEIVED)
+  receivedAt     DateTime     @default(now()) @map("received_at") @db.Timestamptz(6)
+  collectedAt    DateTime?    @map("collected_at") @db.Timestamptz(6)
+  returnedAt     DateTime?    @map("returned_at") @db.Timestamptz(6)
+  guardUserId    String       @map("guard_user_id") @db.Uuid
+  photoObjectKey String?      @map("photo_object_key") @db.VarChar(255)
+  notes          String?      @db.VarChar(1000)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version        Int          @default(0)
+
+  society   Society     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident  Resident    @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  unit      Unit?       @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  guardUser UserAccount @relation("GuardParcels", fields: [guardUserId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, receivedAt])
+  @@index([residentId, status])
+  @@index([trackingNumber])
+  @@index([guardUserId])
+  @@map("parcel")
+}
+
+enum ParkingSpaceStatus {
+  AVAILABLE
+  ASSIGNED
+  RESERVED
+  OUT_OF_SERVICE
+}
+
+model ParkingSpace {
+  id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId   String             @map("society_id") @db.Uuid
+  propertyId  String?            @map("property_id") @db.Uuid
+  unitId      String?            @map("unit_id") @db.Uuid
+  spaceNumber String             @map("space_number") @db.VarChar(80)
+  location    String?            @db.VarChar(200)
+  type        String             @db.VarChar(80)
+  status      ParkingSpaceStatus @default(AVAILABLE)
+  notes       String?            @db.VarChar(500)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version     Int                @default(0)
+
+  society  Society         @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  property Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  unit     Unit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  permits  ParkingPermit[]
+
+  @@unique([societyId, spaceNumber])
+  @@index([societyId, status])
+  @@map("parking_space")
+}
+
+enum ParkingPermitStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  SUSPENDED
+}
+
+model ParkingPermit {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId      String              @map("society_id") @db.Uuid
+  vehicleId      String              @map("vehicle_id") @db.Uuid
+  residentId     String              @map("resident_id") @db.Uuid
+  parkingSpaceId String?             @map("parking_space_id") @db.Uuid
+  permitNumber   String              @unique @map("permit_number") @db.VarChar(80)
+  validFrom      DateTime            @default(now()) @map("valid_from") @db.Timestamptz(6)
+  validUntil     DateTime?           @map("valid_until") @db.Timestamptz(6)
+  status         ParkingPermitStatus @default(ACTIVE)
+  issuedByUserId String              @map("issued_by_user_id") @db.Uuid
+  issuedAt       DateTime            @default(now()) @map("issued_at") @db.Timestamptz(6)
+  notes          String?             @db.VarChar(500)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version        Int                 @default(0)
+
+  society      Society       @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  resident     Resident      @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  parkingSpace ParkingSpace? @relation(fields: [parkingSpaceId], references: [id], onDelete: SetNull)
+  issuedByUser UserAccount   @relation("IssuedPermits", fields: [issuedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, status])
+  @@index([vehicleId])
+  @@index([residentId])
+  @@map("parking_permit")
 }

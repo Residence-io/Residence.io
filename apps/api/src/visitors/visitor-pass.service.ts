@@ -86,8 +86,8 @@ export class VisitorPassService {
             notes: data.notes,
           },
           include: {
-            resident: { select: { userId: true } }
-          }
+            resident: { select: { userId: true } },
+          },
         });
 
         await this.audit.recordSafely({
@@ -102,11 +102,11 @@ export class VisitorPassService {
         const admins = await this.prisma.userAccount.findMany({
           where: {
             societyId,
-            roles: { some: { role: { code: 'ADMINISTRATOR' } } }
+            roles: { some: { role: { code: 'ADMINISTRATOR' } } },
           },
-          select: { id: true }
+          select: { id: true },
         });
-        
+
         if (admins.length > 0) {
           await this.prisma.notification.create({
             data: {
@@ -119,12 +119,12 @@ export class VisitorPassService {
               status: 'SCHEDULED',
               idempotencyKey: `vis_${pass.id}_INVITED_${Date.now()}`,
               recipients: {
-                create: admins.map(a => ({
+                create: admins.map((a) => ({
                   userId: a.id,
-                  readStatus: 'UNREAD'
-                }))
-              }
-            }
+                  readStatus: 'UNREAD',
+                })),
+              },
+            },
           });
         }
 
@@ -142,7 +142,12 @@ export class VisitorPassService {
     throw new ConflictException('Failed to generate unique visitor pass');
   }
 
-  async cancelPass(id: string, societyId: string, residentId: string, actorId: string) {
+  async cancelPass(
+    id: string,
+    societyId: string,
+    residentId: string,
+    actorId: string,
+  ) {
     const pass = await this.prisma.visitorPass.findUnique({
       where: { id },
     });
@@ -256,8 +261,8 @@ export class VisitorPassService {
         const pass = await tx.visitorPass.findUnique({
           where: { id },
           include: {
-            resident: { select: { userId: true } }
-          }
+            resident: { select: { userId: true } },
+          },
         });
 
         if (!pass || pass.societyId !== societyId) {
@@ -287,7 +292,7 @@ export class VisitorPassService {
           where: { id },
           data: { status: VisitorStatus.CHECKED_IN },
         });
-        
+
         await tx.auditLog.create({
           data: {
             societyId,
@@ -296,7 +301,7 @@ export class VisitorPassService {
             targetType: 'VisitorPass',
             targetId: id,
             outcome: AuditOutcome.SUCCESS,
-          }
+          },
         });
 
         if (pass.resident?.userId) {
@@ -311,12 +316,14 @@ export class VisitorPassService {
               status: 'SCHEDULED',
               idempotencyKey: `vis_${pass.id}_CHK_IN_${Date.now()}`,
               recipients: {
-                create: [{
-                  userId: pass.resident.userId,
-                  readStatus: 'UNREAD'
-                }]
-              }
-            }
+                create: [
+                  {
+                    userId: pass.resident.userId,
+                    readStatus: 'UNREAD',
+                  },
+                ],
+              },
+            },
           });
         }
 
@@ -331,51 +338,47 @@ export class VisitorPassService {
   }
 
   async checkOut(checkInId: string, societyId: string, actorId: string) {
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        const checkIn = await tx.visitorCheckIn.findUnique({
-          where: { id: checkInId },
-          include: { visitorPass: { include: { resident: true } } },
-        });
-
-        if (!checkIn || checkIn.societyId !== societyId) {
-          throw new NotFoundException('Check-in record not found');
-        }
-
-        const updateResult = await tx.visitorCheckIn.updateMany({
-          where: { id: checkInId, checkedOutAt: null },
-          data: { checkedOutAt: new Date() },
-        });
-
-        if (updateResult.count === 0) {
-          throw new ConflictException('Visitor is already checked out');
-        }
-
-        const newStatus = checkIn.visitorPass.isRecurring
-          ? VisitorStatus.APPROVED
-          : VisitorStatus.CHECKED_OUT;
-
-        await tx.visitorPass.update({
-          where: { id: checkIn.visitorPassId },
-          data: { status: newStatus },
-        });
-        
-        await tx.auditLog.create({
-          data: {
-            societyId,
-            actorUserId: actorId,
-            action: 'VISITOR_CHECKED_OUT',
-            targetType: 'VisitorPass',
-            targetId: checkIn.visitorPassId,
-            outcome: AuditOutcome.SUCCESS,
-          }
-        });
-
-        return { success: true };
+    return await this.prisma.$transaction(async (tx) => {
+      const checkIn = await tx.visitorCheckIn.findUnique({
+        where: { id: checkInId },
+        include: { visitorPass: { include: { resident: true } } },
       });
-    } catch (e) {
-      throw e;
-    }
+
+      if (!checkIn || checkIn.societyId !== societyId) {
+        throw new NotFoundException('Check-in record not found');
+      }
+
+      const updateResult = await tx.visitorCheckIn.updateMany({
+        where: { id: checkInId, checkedOutAt: null },
+        data: { checkedOutAt: new Date() },
+      });
+
+      if (updateResult.count === 0) {
+        throw new ConflictException('Visitor is already checked out');
+      }
+
+      const newStatus = checkIn.visitorPass.isRecurring
+        ? VisitorStatus.APPROVED
+        : VisitorStatus.CHECKED_OUT;
+
+      await tx.visitorPass.update({
+        where: { id: checkIn.visitorPassId },
+        data: { status: newStatus },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          societyId,
+          actorUserId: actorId,
+          action: 'VISITOR_CHECKED_OUT',
+          targetType: 'VisitorPass',
+          targetId: checkIn.visitorPassId,
+          outcome: AuditOutcome.SUCCESS,
+        },
+      });
+
+      return { success: true };
+    });
   }
 
   async getCurrentlyInside(societyId: string) {
@@ -407,32 +410,40 @@ export class VisitorPassService {
     });
   }
 
-  async setAdminStatus(id: string, societyId: string, status: VisitorStatus, actorId: string) {
+  async setAdminStatus(
+    id: string,
+    societyId: string,
+    status: VisitorStatus,
+    actorId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const pass = await tx.visitorPass.findUnique({
         where: { id },
-        include: { resident: true }
+        include: { resident: true },
       });
       if (!pass || pass.societyId !== societyId) {
         throw new NotFoundException('Visitor pass not found');
       }
-      
+
       const updated = await tx.visitorPass.update({
         where: { id },
         data: { status },
       });
-      
+
       await tx.auditLog.create({
         data: {
           societyId,
           actorUserId: actorId,
-          action: status === VisitorStatus.APPROVED ? 'VISITOR_APPROVED' : 'VISITOR_REJECTED',
+          action:
+            status === VisitorStatus.APPROVED
+              ? 'VISITOR_APPROVED'
+              : 'VISITOR_REJECTED',
           targetType: 'VisitorPass',
           targetId: id,
           outcome: AuditOutcome.SUCCESS,
-        }
+        },
       });
-      
+
       if (pass.resident?.userId) {
         await tx.notification.create({
           data: {
@@ -445,12 +456,14 @@ export class VisitorPassService {
             status: 'SCHEDULED',
             idempotencyKey: `vis_${pass.id}_${status}_${Date.now()}`,
             recipients: {
-              create: [{
-                userId: pass.resident.userId,
-                readStatus: 'UNREAD'
-              }]
-            }
-          }
+              create: [
+                {
+                  userId: pass.resident.userId,
+                  readStatus: 'UNREAD',
+                },
+              ],
+            },
+          },
         });
       }
       return updated;
