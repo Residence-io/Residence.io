@@ -189,7 +189,7 @@ export default async function AdminDashboard({
           )}
           {Number(data.failedDeliveries) > 0 && (
             <Link href="/admin/communications" className="block rounded-xl border border-rose-200 bg-rose-50 p-4 hover:bg-rose-100 transition-colors">
-              <p className="text-sm font-medium text-rose-800">Failed Messages</p>
+              <p className="text-sm font-medium text-rose-800">Failed Notifications</p>
               <p className="mt-1 text-2xl font-bold text-rose-950">{data.failedDeliveries}</p>
             </Link>
           )}

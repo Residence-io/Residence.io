@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { PaymentForm } from '@/components/finance/finance-actions';
 import { getCurrentUser, serverApi } from '@/lib/api.server';
 import type { FinanceDashboard } from '@/lib/finance-types';
 export const metadata = { title: 'Payments' };
@@ -57,51 +56,6 @@ export default async function PaymentsPage({
           <Link className="font-semibold text-blue-700" href="/admin/reports/financial">
             Ledger & Reports
           </Link>
-        </div>
-      </Card>
-      {user?.permissions.includes('PAYMENT_RECORD') && (
-        <Card>
-          <h2 className="mb-4 font-bold">Record administrative payment</h2>
-          <PaymentForm csrfToken={user.csrfToken} />
-        </Card>
-      )}
-      <Card>
-        <h2 className="font-bold">Transactions ({payments.total})</h2>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr>
-                <th className="py-2">Resident</th>
-                <th>Status</th>
-                <th>Method</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.items.map((payment: any) => (
-                <tr className="border-t" key={payment.id}>
-                  <td className="py-3">
-                    <Link
-                      className="font-semibold text-blue-700"
-                      href={`/admin/payments/transactions/${payment.id}`}
-                    >
-                      {payment.resident?.residentNumber} —{' '}
-                      {payment.resident?.fullName}
-                    </Link>
-                  </td>
-                  <td>{payment.status}</td>
-                  <td>{payment.method.replaceAll('_', ' ')}</td>
-                  <td>
-                    {payment.currency} {payment.amount}
-                  </td>
-                  <td>{new Date(payment.paymentDate).toLocaleDateString()}</td>
-                  <td>{payment.receipt?.receiptNumber ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </Card>
     </div>
