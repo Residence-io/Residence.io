@@ -1,3 +1,6 @@
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
+
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import type { Server } from 'node:http';
 import { ConfigService } from '@nestjs/config';
