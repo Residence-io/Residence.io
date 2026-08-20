@@ -58,6 +58,6 @@ export class ResidentsVisitorsController {
     @Param('id') id: string,
   ) {
     const resident = await this.getResident(user.id);
-    return this.visitorService.cancelPass(id, user.societyId, resident.id);
+    return this.visitorService.cancelPass(id, user.societyId, resident.id, user.id);
   }
 }

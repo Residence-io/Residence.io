@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX one_active_checkin_per_pass ON visitor_check_in (visitor_pass_id) WHERE checked_out_at IS NULL;

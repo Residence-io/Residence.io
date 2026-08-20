@@ -25,6 +25,7 @@ export class AdminVisitorsController {
       id,
       user.societyId,
       VisitorStatus.APPROVED,
+      user.id,
     );
   }
 
@@ -37,6 +38,7 @@ export class AdminVisitorsController {
       id,
       user.societyId,
       VisitorStatus.REJECTED,
+      user.id,
     );
   }
 }

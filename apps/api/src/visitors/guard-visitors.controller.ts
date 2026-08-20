@@ -45,6 +45,6 @@ export class GuardVisitorsController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('checkInId') checkInId: string,
   ) {
-    return this.visitorService.checkOut(checkInId, user.societyId);
+    return this.visitorService.checkOut(checkInId, user.societyId, user.id);
   }
 }
