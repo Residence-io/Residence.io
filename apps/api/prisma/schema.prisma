@@ -556,6 +556,13 @@ model Society {
   moveOutRequests         MoveOutRequest[]
   communityEvents         CommunityEvent[]
   emergencyContacts       EmergencyContact[]
+  vendors                 Vendor[]
+  expenses                Expense[]
+  bankAccounts            SocietyBankAccount[]
+  budgets                 Budget[]
+  bankStatements          BankStatement[]
+  bankReconciliations     BankReconciliation[]
+  paymentProviderConfigs  PaymentProviderConfig[]
 
   @@index([status])
   @@map("society")
@@ -619,6 +626,8 @@ model UserAccount {
   reviewedMoveInRequests     MoveInRequest[]            @relation("ReviewedMoveInRequests")
   reviewedMoveOutRequests    MoveOutRequest[]           @relation("ReviewedMoveOutRequests")
   createdCommunityEvents     CommunityEvent[]           @relation("CreatedCommunityEvents")
+  approvedExpenses           Expense[]                  @relation("ExpenseApprover")
+  approvedBudgets            Budget[]                   @relation("BudgetApprover")
 
   @@index([societyId, status])
   @@map("user_account")
@@ -3218,4 +3227,263 @@ model EmergencyContact {
 
   @@index([societyId, isActive, displayOrder])
   @@map("emergency_contact")
+}
+
+// ==========================================
+// PHASE 6: FINANCIAL EXPANSION ENUMS & MODELS
+// ==========================================
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum VendorCategory {
+  MAINTENANCE
+  SECURITY
+  CLEANING
+  UTILITIES
+  LANDSCAPING
+  SUPPLIES
+  CONTRACTOR
+  OTHER
+}
+
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PAID
+  VOID
+}
+
+enum ExpenseCategory {
+  UTILITIES
+  MAINTENANCE
+  SECURITY
+  SALARIES
+  CLEANING
+  LANDSCAPING
+  SUPPLIES
+  FACILITY
+  ADMINISTRATION
+  TAX
+  OTHER
+}
+
+enum BudgetStatus {
+  DRAFT
+  APPROVED
+  CLOSED
+}
+
+enum BankStatementLineStatus {
+  UNMATCHED
+  MATCHED
+  IGNORED
+}
+
+enum BankReconciliationStatus {
+  DRAFT
+  COMPLETED
+}
+
+model Vendor {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId     String         @map("society_id") @db.Uuid
+  vendorCode    String         @unique @map("vendor_code") @db.VarChar(50)
+  name          String         @db.VarChar(160)
+  contactPerson String?        @map("contact_person") @db.VarChar(120)
+  phone         String?        @db.VarChar(40)
+  email         String?        @db.VarChar(254)
+  address       String?        @db.VarChar(300)
+  taxNumber     String?        @map("tax_number") @db.VarChar(60)
+  category      VendorCategory @default(MAINTENANCE)
+  status        VendorStatus   @default(ACTIVE)
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version       Int            @default(0)
+
+  society  Society   @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  expenses Expense[]
+
+  @@index([societyId, status])
+  @@map("vendor")
+}
+
+model Expense {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId        String          @map("society_id") @db.Uuid
+  expenseNumber    String          @unique @map("expense_number") @db.VarChar(50)
+  vendorId         String?         @map("vendor_id") @db.Uuid
+  category         ExpenseCategory @default(MAINTENANCE)
+  description      String          @db.VarChar(500)
+  expenseDate      DateTime        @map("expense_date") @db.Date
+  amount           Decimal         @db.Decimal(12, 2)
+  currency         String          @default("PKR") @db.VarChar(3)
+  status           ExpenseStatus   @default(DRAFT)
+  invoiceNumber    String?         @map("invoice_number") @db.VarChar(100)
+  invoiceObjectKey String?         @map("invoice_object_key") @db.VarChar(500)
+  paymentMethod    PaymentMethod?  @map("payment_method")
+  bankAccountId    String?         @map("bank_account_id") @db.Uuid
+  approvedByUserId String?         @map("approved_by_user_id") @db.Uuid
+  approvedAt       DateTime?       @map("approved_at") @db.Timestamptz(6)
+  paidAt           DateTime?       @map("paid_at") @db.Timestamptz(6)
+  rejectionReason  String?         @map("rejection_reason") @db.VarChar(500)
+  notes            String?         @db.Text
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int             @default(0)
+
+  society        Society             @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  vendor         Vendor?             @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  bankAccount    SocietyBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  approvedByUser UserAccount?        @relation("ExpenseApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([societyId, status, expenseDate])
+  @@map("expense")
+}
+
+model SocietyBankAccount {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId           String   @map("society_id") @db.Uuid
+  bankName            String   @map("bank_name") @db.VarChar(120)
+  accountTitle        String   @map("account_title") @db.VarChar(160)
+  accountNumberMasked String   @map("account_number_masked") @db.VarChar(40)
+  iban                String?  @db.VarChar(50)
+  branchCode          String?  @map("branch_code") @db.VarChar(30)
+  currency            String   @default("PKR") @db.VarChar(3)
+  openingBalance      Decimal  @default(0) @map("opening_balance") @db.Decimal(14, 2)
+  currentBalance      Decimal  @default(0) @map("current_balance") @db.Decimal(14, 2)
+  isDefault           Boolean  @default(false) @map("is_default")
+  isActive            Boolean  @default(true) @map("is_active")
+  depositInstructions String?  @map("deposit_instructions") @db.Text
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  society         Society              @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  expenses        Expense[]
+  statements      BankStatement[]
+  reconciliations BankReconciliation[]
+
+  @@index([societyId, isActive])
+  @@map("society_bank_account")
+}
+
+model Budget {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId        String       @map("society_id") @db.Uuid
+  name             String       @db.VarChar(160)
+  financialYear    String       @map("financial_year") @db.VarChar(20)
+  status           BudgetStatus @default(DRAFT)
+  notes            String?      @db.Text
+  approvedByUserId String?      @map("approved_by_user_id") @db.Uuid
+  approvedAt       DateTime?    @map("approved_at") @db.Timestamptz(6)
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int          @default(0)
+
+  society        Society      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  approvedByUser UserAccount? @relation("BudgetApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  lines          BudgetLine[]
+
+  @@index([societyId, financialYear])
+  @@map("budget")
+}
+
+model BudgetLine {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  budgetId      String          @map("budget_id") @db.Uuid
+  category      ExpenseCategory
+  plannedAmount Decimal         @map("planned_amount") @db.Decimal(12, 2)
+  notes         String?         @db.VarChar(300)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@index([budgetId, category])
+  @@map("budget_line")
+}
+
+model BankStatement {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId          String   @map("society_id") @db.Uuid
+  bankAccountId      String   @map("bank_account_id") @db.Uuid
+  fileName           String   @map("file_name") @db.VarChar(255)
+  statementStartDate DateTime @map("statement_start_date") @db.Date
+  statementEndDate   DateTime @map("statement_end_date") @db.Date
+  openingBalance     Decimal? @map("opening_balance") @db.Decimal(14, 2)
+  closingBalance     Decimal? @map("closing_balance") @db.Decimal(14, 2)
+  importedByUserId   String   @map("imported_by_user_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  society     Society             @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  bankAccount SocietyBankAccount  @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  lines       BankStatementLine[]
+
+  @@index([societyId, bankAccountId])
+  @@map("bank_statement")
+}
+
+model BankStatementLine {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  statementId       String                  @map("statement_id") @db.Uuid
+  transactionDate   DateTime                @map("transaction_date") @db.Date
+  description       String                  @db.VarChar(500)
+  reference         String?                 @db.VarChar(120)
+  debit             Decimal                 @default(0) @db.Decimal(12, 2)
+  credit            Decimal                 @default(0) @db.Decimal(12, 2)
+  balance           Decimal?                @db.Decimal(14, 2)
+  status            BankStatementLineStatus @default(UNMATCHED)
+  matchedEntityType String?                 @map("matched_entity_type") @db.VarChar(50)
+  matchedEntityId   String?                 @map("matched_entity_id") @db.Uuid
+  matchedAt         DateTime?               @map("matched_at") @db.Timestamptz(6)
+  matchedByUserId   String?                 @map("matched_by_user_id") @db.Uuid
+
+  statement BankStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+
+  @@index([statementId, status])
+  @@map("bank_statement_line")
+}
+
+model BankReconciliation {
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId          String                   @map("society_id") @db.Uuid
+  bankAccountId      String                   @map("bank_account_id") @db.Uuid
+  reconciliationDate DateTime                 @map("reconciliation_date") @db.Date
+  statementBalance   Decimal                  @map("statement_balance") @db.Decimal(14, 2)
+  ledgerBalance      Decimal                  @map("ledger_balance") @db.Decimal(14, 2)
+  difference         Decimal                  @default(0) @db.Decimal(14, 2)
+  status             BankReconciliationStatus @default(DRAFT)
+  notes              String?                  @db.Text
+  completedAt        DateTime?                @map("completed_at") @db.Timestamptz(6)
+  completedByUserId  String?                  @map("completed_by_user_id") @db.Uuid
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  society     Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  bankAccount SocietyBankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, bankAccountId])
+  @@map("bank_reconciliation")
+}
+
+model PaymentProviderConfig {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String   @map("society_id") @db.Uuid
+  providerType    String   @map("provider_type") @db.VarChar(50)
+  isEnabled       Boolean  @default(false) @map("is_enabled")
+  displayName     String   @map("display_name") @db.VarChar(120)
+  configEncrypted Json?    @map("config_encrypted")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  society Society @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@unique([societyId, providerType])
+  @@map("payment_provider_config")
 }

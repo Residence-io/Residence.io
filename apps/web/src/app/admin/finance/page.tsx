@@ -3,32 +3,41 @@ import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { getCurrentUser, serverApi } from '@/lib/api.server';
 import type { FinanceDashboard } from '@/lib/finance-types';
-export const metadata = { title: 'Payments' };
-export default async function PaymentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ search?: string; status?: string }>;
-}) {
-  const user = await getCurrentUser();
-  const query = await searchParams;
-  const [dashboard, paymentPage] = await Promise.all([
-    serverApi<FinanceDashboard>('/finance/dashboard'),
-    serverApi<any>('/payments?pageSize=100'),
-  ]);
-  const payments = paymentPage;
+
+export const metadata = { title: 'Finance' };
+
+export default async function FinanceOverviewPage() {
+  await getCurrentUser();
+  const dashboard = await serverApi<FinanceDashboard>(
+    '/finance/dashboard',
+  ).catch(() => ({
+    currency: 'PKR',
+    totalReceived: '0.00',
+    outstanding: '0.00',
+    overdueDues: 0,
+    pendingVerification: 0,
+  }));
+
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="Finance"
-        title="Payments and resident balances"
-        description="Confirmed payments, pending verification, dues, receipts, and immutable ledger postings."
+        eyebrow="Finance & Accounts"
+        title="Financial Overview & Management"
+        description="Single source of financial truth: Resident billing, collections, expenses, vendors, budgets, and bank reconciliation."
       />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          ['Received', `${dashboard.currency} ${dashboard.totalReceived}`],
-          ['Outstanding', `${dashboard.currency} ${dashboard.outstanding}`],
-          ['Overdue dues', dashboard.overdueDues],
-          ['Pending verification', dashboard.pendingVerification],
+          [
+            'Total Collections',
+            `${dashboard.currency} ${dashboard.totalReceived}`,
+          ],
+          [
+            'Outstanding Receivables',
+            `${dashboard.currency} ${dashboard.outstanding}`,
+          ],
+          ['Overdue Dues', dashboard.overdueDues],
+          ['Transfers Awaiting Verification', dashboard.pendingVerification],
         ].map(([label, value]) => (
           <Card key={label}>
             <p className="text-sm text-slate-500">{label}</p>
@@ -36,34 +45,59 @@ export default async function PaymentsPage({
           </Card>
         ))}
       </div>
+
       <Card>
-        <div className="flex flex-wrap gap-4">
-          <Link className="font-semibold text-blue-700" href="/admin/payments">
-            All payments
-          </Link>
-          <Link className="font-semibold text-blue-700" href="/admin/dues">
-            Dues
-          </Link>
+        <h3 className="text-lg font-semibold mb-3">
+          Finance Modules & Actions
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <Link
-            className="font-semibold text-blue-700"
-            href="/admin/dues/generate"
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
+            href="/admin/finance/expenses"
           >
-            Generate dues
-          </Link>
-          <Link className="font-semibold text-blue-700" href="/admin/fee-plans">
-            Fee plans
+            💸 Expenses & Approvals
           </Link>
           <Link
-            className="font-semibold text-blue-700"
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
+            href="/admin/finance/vendors"
+          >
+            🏢 Vendor Directory
+          </Link>
+          <Link
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
+            href="/admin/finance/budgets"
+          >
+            📊 Budget Management
+          </Link>
+          <Link
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
+            href="/admin/finance/banking"
+          >
+            🏦 Society Bank Accounts
+          </Link>
+          <Link
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
+            href="/admin/finance/reconciliation"
+          >
+            ⚖️ Bank Reconciliation
+          </Link>
+          <Link
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
             href="/admin/payments/verification"
           >
-            Verification queue
+            ✅ Transfer Verification
           </Link>
           <Link
-            className="font-semibold text-blue-700"
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
+            href="/admin/payments"
+          >
+            💳 Resident Payments
+          </Link>
+          <Link
+            className="p-3 bg-slate-50 hover:bg-blue-50 rounded font-medium text-blue-700 border border-slate-200"
             href="/admin/reports/financial"
           >
-            Ledger & Reports
+            📈 Ledger & Reports
           </Link>
         </div>
       </Card>
