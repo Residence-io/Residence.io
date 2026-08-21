@@ -138,4 +138,5 @@ ALTER TABLE "parking_permit" ADD CONSTRAINT "parking_permit_issued_by_user_id_fk
 
 
 -- Add Partial Unique Constraints
-CREATE UNIQUE INDEX one_active_permit_per_space ON parking_permit (parking_space_id) WHERE status = 'ACTIVE' AND parking_space_id IS NOT NULL;CREATE UNIQUE INDEX one_active_permit_per_vehicle ON parking_permit (vehicle_id) WHERE status = \'ACTIVE\';
+CREATE UNIQUE INDEX "one_active_permit_per_space" ON "parking_permit" ("parking_space_id") WHERE "status" = 'ACTIVE' AND "parking_space_id" IS NOT NULL;
+CREATE UNIQUE INDEX "one_active_permit_per_vehicle" ON "parking_permit" ("vehicle_id") WHERE "status" = 'ACTIVE';
