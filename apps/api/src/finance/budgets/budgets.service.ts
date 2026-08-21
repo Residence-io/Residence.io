@@ -41,11 +41,26 @@ export class BudgetsService {
       throw new NotFoundException('Budget not found.');
     }
 
-    // Dynamic Actual spend calculation from authoritative paid/approved expenses
+    const yearMatch = budget.financialYear.match(/(\d{4})/g);
+    const startYear = yearMatch
+      ? parseInt(yearMatch[0], 10)
+      : new Date().getFullYear();
+    const endYear =
+      yearMatch && yearMatch.length > 1
+        ? parseInt(yearMatch[1], 10)
+        : startYear;
+    const startDate = new Date(Date.UTC(startYear, 0, 1));
+    const endDate = new Date(Date.UTC(endYear, 11, 31, 23, 59, 59, 999));
+
+    // Dynamic Actual spend calculation from authoritative paid expenses within financial year
     const expenses = await this.prisma.expense.findMany({
       where: {
         societyId,
-        status: { in: [ExpenseStatus.PAID, ExpenseStatus.APPROVED] },
+        status: ExpenseStatus.PAID,
+        expenseDate: {
+          gte: startDate,
+          lte: endDate,
+        },
       },
     });
 

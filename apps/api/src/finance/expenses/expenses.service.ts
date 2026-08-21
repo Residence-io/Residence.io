@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
@@ -216,9 +217,13 @@ export class ExpensesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Mark expense paid
-      const updated = await tx.expense.update({
-        where: { id },
+      // 1. Atomic status transition: update only if still APPROVED
+      const updateResult = await tx.expense.updateMany({
+        where: {
+          id,
+          societyId,
+          status: ExpenseStatus.APPROVED,
+        },
         data: {
           status: ExpenseStatus.PAID,
           paidAt: new Date(),
@@ -230,8 +235,18 @@ export class ExpensesService {
         },
       });
 
-      // 2. If bank account provided, deduct balance
-      if (updated.bankAccountId) {
+      if (updateResult.count === 0) {
+        throw new ConflictException(
+          'This expense has already been paid or is no longer payable.',
+        );
+      }
+
+      const updated = await tx.expense.findFirst({
+        where: { id, societyId },
+      });
+
+      // 2. If bank account provided, deduct balance atomically
+      if (updated?.bankAccountId) {
         await tx.societyBankAccount.update({
           where: { id: updated.bankAccountId },
           data: {
@@ -254,7 +269,7 @@ export class ExpensesService {
         },
       });
 
-      return updated;
+      return updated!;
     });
   }
 

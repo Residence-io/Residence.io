@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
@@ -168,11 +169,27 @@ export class ReconciliationService {
     }
 
     if (line.status === BankStatementLineStatus.MATCHED) {
-      throw new BadRequestException('Statement line is already matched.');
+      throw new ConflictException('Statement line is already matched.');
     }
 
-    const updated = await this.prisma.bankStatementLine.update({
-      where: { id: lineId },
+    // Direction-aware validation
+    if (dto.matchedEntityType === 'PAYMENT' && Number(line.credit) <= 0) {
+      throw new BadRequestException(
+        'Resident payments must match incoming bank credit statement lines.',
+      );
+    }
+
+    if (dto.matchedEntityType === 'EXPENSE' && Number(line.debit) <= 0) {
+      throw new BadRequestException(
+        'Society expenses must match outgoing bank debit statement lines.',
+      );
+    }
+
+    const updateResult = await this.prisma.bankStatementLine.updateMany({
+      where: {
+        id: lineId,
+        status: BankStatementLineStatus.UNMATCHED,
+      },
       data: {
         status: BankStatementLineStatus.MATCHED,
         matchedEntityType: dto.matchedEntityType,
@@ -180,6 +197,14 @@ export class ReconciliationService {
         matchedAt: new Date(),
         matchedByUserId: userId,
       },
+    });
+
+    if (updateResult.count === 0) {
+      throw new ConflictException('Statement line has already been matched.');
+    }
+
+    const updated = await this.prisma.bankStatementLine.findFirst({
+      where: { id: lineId },
     });
 
     await this.audit.recordSafely({
@@ -195,7 +220,7 @@ export class ReconciliationService {
       },
     });
 
-    return updated;
+    return updated!;
   }
 
   async createReconciliation(
