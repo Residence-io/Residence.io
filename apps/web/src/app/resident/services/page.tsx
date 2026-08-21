@@ -1,7 +1,14 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { AlertTriangle, Wrench, Users, Package, Car } from 'lucide-react';
+import {
+  AlertTriangle,
+  Wrench,
+  Users,
+  Package,
+  Car,
+  Building,
+} from 'lucide-react';
 
 export default function ServicesOverview() {
   return (
@@ -110,6 +117,24 @@ export default function ServicesOverview() {
               href="/resident/maintenance/new"
             >
               Request
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-teal-100 text-teal-700">
+            <Building className="size-5" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Facilities & Amenities</h2>
+          <p className="text-sm text-slate-500 mb-6 flex-1">
+            Reserve community halls, gym, pool, courts, and event spaces.
+          </p>
+          <div className="flex gap-3">
+            <Link
+              className="rounded-xl bg-teal-600 px-4 py-2 text-white font-medium text-sm flex-1 text-center hover:bg-teal-700 transition-colors"
+              href="/resident/facilities"
+            >
+              Browse & Book
             </Link>
           </div>
         </Card>

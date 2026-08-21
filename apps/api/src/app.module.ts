@@ -29,6 +29,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { VisitorsModule } from './visitors/visitors.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
+import { FacilitiesModule } from './facilities/facilities.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     VisitorsModule,
     DeliveriesModule,
     VehiclesModule,
+    FacilitiesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

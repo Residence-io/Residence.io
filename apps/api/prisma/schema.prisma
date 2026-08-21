@@ -548,6 +548,9 @@ model Society {
   parcels                 Parcel[]
   parkingSpaces           ParkingSpace[]
   parkingPermits          ParkingPermit[]
+  facilities              Facility[]
+  facilityBookings        FacilityBooking[]
+  facilityBlockouts       FacilityBlockout[]
 
   @@index([status])
   @@map("society")
@@ -604,6 +607,9 @@ model UserAccount {
   guardCheckIns              VisitorCheckIn[]           @relation("GuardCheckIns")
   guardParcels               Parcel[]                   @relation("GuardParcels")
   issuedPermits              ParkingPermit[]            @relation("IssuedPermits")
+  facilityBlockouts          FacilityBlockout[]         @relation("FacilityBlockouts")
+  approvedFacilityBookings   FacilityBooking[]          @relation("ApprovedFacilityBookings")
+  cancelledFacilityBookings  FacilityBooking[]          @relation("CancelledFacilityBookings")
 
   @@index([societyId, status])
   @@map("user_account")
@@ -866,6 +872,7 @@ model Resident {
   visitorPasses       VisitorPass[]
   parcels             Parcel[]
   parkingPermits      ParkingPermit[]
+  facilityBookings    FacilityBooking[]
 
   @@unique([societyId, residentNumber], name: "uk_resident_society_number")
   @@index([societyId, status, residentNumber])
@@ -2881,4 +2888,107 @@ model ParkingPermit {
   @@index([vehicleId])
   @@index([residentId])
   @@map("parking_permit")
+}
+
+enum FacilityStatus {
+  ACTIVE
+  INACTIVE
+  UNDER_MAINTENANCE
+}
+
+enum FacilityBookingStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model Facility {
+  id                     String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId              String         @map("society_id") @db.Uuid
+  name                   String         @db.VarChar(120)
+  description            String?        @db.Text
+  location               String?        @db.VarChar(200)
+  category               String         @db.VarChar(80)
+  capacity               Int?
+  status                 FacilityStatus @default(ACTIVE)
+  openingTime            String         @default("08:00") @map("opening_time") @db.VarChar(10)
+  closingTime            String         @default("22:00") @map("closing_time") @db.VarChar(10)
+  bookingDurationMinutes Int            @default(60) @map("booking_duration_minutes")
+  advanceBookingDays     Int            @default(7) @map("advance_booking_days")
+  bookingFee             Decimal        @default(0) @map("booking_fee") @db.Decimal(18, 2)
+  depositAmount          Decimal        @default(0) @map("deposit_amount") @db.Decimal(18, 2)
+  currency               String         @default("PKR") @db.Char(3)
+  requiresApproval       Boolean        @default(false) @map("requires_approval")
+  rules                  String?        @db.Text
+  cancellationPolicy     String?        @map("cancellation_policy") @db.Text
+  imageObjectKey         String?        @map("image_object_key") @db.VarChar(255)
+  createdAt              DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                Int            @default(0)
+
+  society   Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  bookings  FacilityBooking[]
+  blockouts FacilityBlockout[]
+
+  @@index([societyId, status])
+  @@map("facility")
+}
+
+model FacilityBlockout {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String   @map("society_id") @db.Uuid
+  facilityId      String   @map("facility_id") @db.Uuid
+  startsAt        DateTime @map("starts_at") @db.Timestamptz(6)
+  endsAt          DateTime @map("ends_at") @db.Timestamptz(6)
+  reason          String   @db.VarChar(500)
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  society       Society     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  facility      Facility    @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  createdByUser UserAccount @relation("FacilityBlockouts", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, facilityId])
+  @@index([facilityId, startsAt, endsAt])
+  @@map("facility_blockout")
+}
+
+model FacilityBooking {
+  id                 String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId          String                @map("society_id") @db.Uuid
+  facilityId         String                @map("facility_id") @db.Uuid
+  residentId         String                @map("resident_id") @db.Uuid
+  bookingDate        DateTime              @map("booking_date") @db.Date
+  startsAt           DateTime              @map("starts_at") @db.Timestamptz(6)
+  endsAt             DateTime              @map("ends_at") @db.Timestamptz(6)
+  guestCount         Int?                  @map("guest_count")
+  purpose            String?               @db.VarChar(300)
+  status             FacilityBookingStatus @default(PENDING)
+  bookingFee         Decimal               @default(0) @map("booking_fee") @db.Decimal(18, 2)
+  depositAmount      Decimal               @default(0) @map("deposit_amount") @db.Decimal(18, 2)
+  currency           String                @default("PKR") @db.Char(3)
+  approvedByUserId   String?               @map("approved_by_user_id") @db.Uuid
+  approvedAt         DateTime?             @map("approved_at") @db.Timestamptz(6)
+  cancelledAt        DateTime?             @map("cancelled_at") @db.Timestamptz(6)
+  cancelledByUserId  String?               @map("cancelled_by_user_id") @db.Uuid
+  cancellationReason String?               @map("cancellation_reason") @db.VarChar(500)
+  notes              String?               @db.VarChar(1000)
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version            Int                   @default(0)
+
+  society         Society      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  facility        Facility     @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  resident        Resident     @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  approvedByUser  UserAccount? @relation("ApprovedFacilityBookings", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  cancelledByUser UserAccount? @relation("CancelledFacilityBookings", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+
+  @@index([societyId, status])
+  @@index([facilityId, bookingDate])
+  @@index([residentId, status])
+  @@index([startsAt, endsAt])
+  @@map("facility_booking")
 }

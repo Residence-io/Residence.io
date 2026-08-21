@@ -41,6 +41,7 @@ export default async function AdminLayout({
     ].includes(p),
   );
   const hasVisitors = perms.includes('VISITOR_ADMIN');
+  const hasFacilities = perms.includes('FACILITY_VIEW');
   const hasReports = perms.includes('REPORT_READ');
   const hasSettings = perms.includes('SOCIETY_SETTING_MANAGE');
 
@@ -72,6 +73,11 @@ export default async function AdminLayout({
           label: 'Workforce',
           href: '/admin/workforce',
           available: hasWorkforce,
+        },
+        {
+          label: 'Facilities',
+          href: '/admin/facilities',
+          available: hasFacilities,
         },
       ],
     },
