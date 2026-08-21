@@ -30,6 +30,7 @@ import { VisitorsModule } from './visitors/visitors.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { FacilitiesModule } from './facilities/facilities.module';
+import { SelfServiceModule } from './self-service/self-service.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { FacilitiesModule } from './facilities/facilities.module';
     DeliveriesModule,
     VehiclesModule,
     FacilitiesModule,
+    SelfServiceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -52,6 +52,7 @@ export default async function AdminLayout({
       children: [
         { label: 'Residents', href: '/admin/residents', available: true },
         { label: 'Properties', href: '/admin/properties', available: true },
+        { label: 'Move-In / Out', href: '/admin/move-in-out', available: true },
       ],
     },
     {
@@ -78,6 +79,26 @@ export default async function AdminLayout({
           label: 'Facilities',
           href: '/admin/facilities',
           available: hasFacilities,
+        },
+      ],
+    },
+    {
+      label: 'COMMUNITY',
+      children: [
+        {
+          label: 'Requests & NOCs',
+          href: '/admin/requests',
+          available: true,
+        },
+        {
+          label: 'Community Calendar',
+          href: '/admin/community/events',
+          available: true,
+        },
+        {
+          label: 'Emergency Contacts',
+          href: '/admin/community/emergency-contacts',
+          available: true,
         },
       ],
     },

@@ -551,6 +551,11 @@ model Society {
   facilities              Facility[]
   facilityBookings        FacilityBooking[]
   facilityBlockouts       FacilityBlockout[]
+  residentRequests        ResidentRequest[]
+  moveInRequests          MoveInRequest[]
+  moveOutRequests         MoveOutRequest[]
+  communityEvents         CommunityEvent[]
+  emergencyContacts       EmergencyContact[]
 
   @@index([status])
   @@map("society")
@@ -610,6 +615,10 @@ model UserAccount {
   facilityBlockouts          FacilityBlockout[]         @relation("FacilityBlockouts")
   approvedFacilityBookings   FacilityBooking[]          @relation("ApprovedFacilityBookings")
   cancelledFacilityBookings  FacilityBooking[]          @relation("CancelledFacilityBookings")
+  reviewedResidentRequests   ResidentRequest[]          @relation("ReviewedResidentRequests")
+  reviewedMoveInRequests     MoveInRequest[]            @relation("ReviewedMoveInRequests")
+  reviewedMoveOutRequests    MoveOutRequest[]           @relation("ReviewedMoveOutRequests")
+  createdCommunityEvents     CommunityEvent[]           @relation("CreatedCommunityEvents")
 
   @@index([societyId, status])
   @@map("user_account")
@@ -793,6 +802,9 @@ model Property {
   complaints          Complaint[]
   maintenanceRequests MaintenanceRequest[]
   parkingSpaces       ParkingSpace[]
+  residentRequests    ResidentRequest[]
+  moveInRequests      MoveInRequest[]
+  moveOutRequests     MoveOutRequest[]
 
   @@unique([societyId, normalizedAddressKey], name: "uk_property_society_address")
   @@index([societyId, block, active])
@@ -819,6 +831,9 @@ model Unit {
   visitorPasses       VisitorPass[]
   parcels             Parcel[]
   parkingSpaces       ParkingSpace[]
+  residentRequests    ResidentRequest[]
+  moveInRequests      MoveInRequest[]
+  moveOutRequests     MoveOutRequest[]
 
   @@unique([propertyId, normalizedUnitNumber], name: "uk_unit_property_number")
   @@index([propertyId, status])
@@ -873,6 +888,9 @@ model Resident {
   parcels             Parcel[]
   parkingPermits      ParkingPermit[]
   facilityBookings    FacilityBooking[]
+  residentRequests    ResidentRequest[]
+  moveInRequests      MoveInRequest[]
+  moveOutRequests     MoveOutRequest[]
 
   @@unique([societyId, residentNumber], name: "uk_resident_society_number")
   @@index([societyId, status, residentNumber])
@@ -961,21 +979,28 @@ model Vehicle {
 }
 
 model ResidentDocument {
-  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  residentId       String                   @map("resident_id") @db.Uuid
-  category         ResidentDocumentCategory
-  status           ResidentDocumentStatus   @default(ACTIVE)
-  objectKey        String                   @unique @map("object_key") @db.VarChar(500)
-  originalFileName String                   @map("original_file_name") @db.VarChar(255)
-  mediaType        String                   @map("media_type") @db.VarChar(120)
-  sizeBytes        BigInt                   @map("size_bytes")
-  checksumSha256   String                   @map("checksum_sha256") @db.Char(64)
-  uploadedByUserId String                   @map("uploaded_by_user_id") @db.Uuid
-  replacedById     String?                  @map("replaced_by_id") @db.Uuid
-  archivedAt       DateTime?                @map("archived_at") @db.Timestamptz(6)
-  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  version          Int                      @default(0)
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  residentId         String                   @map("resident_id") @db.Uuid
+  category           ResidentDocumentCategory
+  status             ResidentDocumentStatus   @default(ACTIVE)
+  objectKey          String                   @unique @map("object_key") @db.VarChar(500)
+  originalFileName   String                   @map("original_file_name") @db.VarChar(255)
+  mediaType          String                   @map("media_type") @db.VarChar(120)
+  sizeBytes          BigInt                   @map("size_bytes")
+  checksumSha256     String                   @map("checksum_sha256") @db.Char(64)
+  uploadedByUserId   String                   @map("uploaded_by_user_id") @db.Uuid
+  replacedById       String?                  @map("replaced_by_id") @db.Uuid
+  documentNumber     String?                  @map("document_number") @db.VarChar(120)
+  issuedAt           DateTime?                @map("issued_at") @db.Timestamptz(6)
+  expiresAt          DateTime?                @map("expires_at") @db.Timestamptz(6)
+  verificationStatus String                   @default("PENDING") @map("verification_status") @db.VarChar(40)
+  verifiedByUserId   String?                  @map("verified_by_user_id") @db.Uuid
+  verifiedAt         DateTime?                @map("verified_at") @db.Timestamptz(6)
+  rejectionReason    String?                  @map("rejection_reason") @db.VarChar(500)
+  archivedAt         DateTime?                @map("archived_at") @db.Timestamptz(6)
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version            Int                      @default(0)
 
   resident Resident @relation(fields: [residentId], references: [id], onDelete: Restrict)
 
@@ -2991,4 +3016,206 @@ model FacilityBooking {
   @@index([residentId, status])
   @@index([startsAt, endsAt])
   @@map("facility_booking")
+}
+
+enum ResidentRequestType {
+  RESIDENCE_CERTIFICATE
+  MAINTENANCE_CLEARANCE
+  MOVE_OUT_NOC
+  PROPERTY_TRANSFER_CLEARANCE
+  RENOVATION_PERMISSION
+  CONTRACTOR_ENTRY
+  VEHICLE_STICKER
+  EVENT_PERMISSION
+  OTHER
+}
+
+enum ResidentRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  ISSUED
+  CANCELLED
+}
+
+model ResidentRequest {
+  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId               String                @map("society_id") @db.Uuid
+  residentId              String                @map("resident_id") @db.Uuid
+  propertyId              String?               @map("property_id") @db.Uuid
+  unitId                  String?               @map("unit_id") @db.Uuid
+  requestNumber           String                @unique @map("request_number") @db.VarChar(80)
+  requestType             ResidentRequestType   @map("request_type")
+  title                   String                @db.VarChar(200)
+  description             String?               @db.Text
+  status                  ResidentRequestStatus @default(SUBMITTED)
+  submittedAt             DateTime              @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  reviewedAt              DateTime?             @map("reviewed_at") @db.Timestamptz(6)
+  reviewedByUserId        String?               @map("reviewed_by_user_id") @db.Uuid
+  rejectionReason         String?               @map("rejection_reason") @db.VarChar(500)
+  issuedDocumentObjectKey String?               @map("issued_document_object_key") @db.VarChar(500)
+  metadata                Json?                 @db.JsonB
+  createdAt               DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                 Int                   @default(0)
+
+  society        Society      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident       Resident     @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  property       Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  unit           Unit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  reviewedByUser UserAccount? @relation("ReviewedResidentRequests", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([societyId, status])
+  @@index([residentId, status])
+  @@index([requestType])
+  @@map("resident_request")
+}
+
+enum MoveInRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model MoveInRequest {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId         String              @map("society_id") @db.Uuid
+  residentId        String              @map("resident_id") @db.Uuid
+  propertyId        String              @map("property_id") @db.Uuid
+  unitId            String              @map("unit_id") @db.Uuid
+  requestNumber     String              @unique @map("request_number") @db.VarChar(80)
+  occupancyType     OccupancyType       @map("occupancy_type")
+  desiredMoveInDate DateTime            @map("desired_move_in_date") @db.Date
+  status            MoveInRequestStatus @default(SUBMITTED)
+  submittedAt       DateTime            @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  reviewedAt        DateTime?           @map("reviewed_at") @db.Timestamptz(6)
+  reviewedByUserId  String?             @map("reviewed_by_user_id") @db.Uuid
+  rejectionReason   String?             @map("rejection_reason") @db.VarChar(500)
+  notes             String?             @db.Text
+  metadata          Json?               @db.JsonB
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version           Int                 @default(0)
+
+  society        Society      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident       Resident     @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  property       Property     @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  unit           Unit         @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  reviewedByUser UserAccount? @relation("ReviewedMoveInRequests", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([societyId, status])
+  @@index([residentId, status])
+  @@map("move_in_request")
+}
+
+enum MoveOutRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  CLEARANCE_PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model MoveOutRequest {
+  id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId              String               @map("society_id") @db.Uuid
+  residentId             String               @map("resident_id") @db.Uuid
+  propertyId             String               @map("property_id") @db.Uuid
+  unitId                 String               @map("unit_id") @db.Uuid
+  requestNumber          String               @unique @map("request_number") @db.VarChar(80)
+  desiredMoveOutDate     DateTime             @map("desired_move_out_date") @db.Date
+  status                 MoveOutRequestStatus @default(SUBMITTED)
+  duesClearanceStatus    String               @default("PENDING") @map("dues_clearance_status") @db.VarChar(40)
+  parkingClearanceStatus String               @default("PENDING") @map("parking_clearance_status") @db.VarChar(40)
+  submittedAt            DateTime             @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  reviewedAt             DateTime?            @map("reviewed_at") @db.Timestamptz(6)
+  reviewedByUserId       String?              @map("reviewed_by_user_id") @db.Uuid
+  rejectionReason        String?              @map("rejection_reason") @db.VarChar(500)
+  notes                  String?              @db.Text
+  createdAt              DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version                Int                  @default(0)
+
+  society        Society      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  resident       Resident     @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  property       Property     @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  unit           Unit         @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  reviewedByUser UserAccount? @relation("ReviewedMoveOutRequests", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([societyId, status])
+  @@index([residentId, status])
+  @@map("move_out_request")
+}
+
+enum CommunityEventType {
+  SOCIETY_MEETING
+  AGM
+  MAINTENANCE
+  WATER_SHUTDOWN
+  POWER_MAINTENANCE
+  COMMUNITY_EVENT
+  PAYMENT_DEADLINE
+  FACILITY_CLOSURE
+  GENERAL
+}
+
+enum CommunityEventStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum CommunityEventVisibility {
+  ALL_RESIDENTS
+  OWNERS_ONLY
+  TENANTS_ONLY
+}
+
+model CommunityEvent {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String                   @map("society_id") @db.Uuid
+  title           String                   @db.VarChar(200)
+  description     String?                  @db.Text
+  eventType       CommunityEventType       @map("event_type")
+  location        String?                  @db.VarChar(200)
+  startsAt        DateTime                 @map("starts_at") @db.Timestamptz(6)
+  endsAt          DateTime                 @map("ends_at") @db.Timestamptz(6)
+  allDay          Boolean                  @default(false) @map("all_day")
+  status          CommunityEventStatus     @default(SCHEDULED)
+  visibility      CommunityEventVisibility @default(ALL_RESIDENTS)
+  createdByUserId String                   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version         Int                      @default(0)
+
+  society       Society     @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  createdByUser UserAccount @relation("CreatedCommunityEvents", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, status, startsAt])
+  @@map("community_event")
+}
+
+model EmergencyContact {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId      String   @map("society_id") @db.Uuid
+  name           String   @db.VarChar(120)
+  category       String   @db.VarChar(80)
+  phone          String   @db.VarChar(40)
+  alternatePhone String?  @map("alternate_phone") @db.VarChar(40)
+  description    String?  @db.VarChar(300)
+  displayOrder   Int      @default(0) @map("display_order")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  society Society @relation(fields: [societyId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, isActive, displayOrder])
+  @@map("emergency_contact")
 }

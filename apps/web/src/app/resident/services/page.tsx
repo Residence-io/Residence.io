@@ -138,6 +138,80 @@ export default function ServicesOverview() {
             </Link>
           </div>
         </Card>
+
+        <Card className="flex flex-col">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+            <Users className="size-5" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">My Documents</h2>
+          <p className="text-sm text-slate-500 mb-6 flex-1">
+            Access and upload verified CNIC, tenancy, and property documents.
+          </p>
+          <div className="flex gap-3">
+            <Link
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-white font-medium text-sm flex-1 text-center hover:bg-indigo-700 transition-colors"
+              href="/resident/documents"
+            >
+              View Documents
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+            <AlertTriangle className="size-5" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Requests & NOCs</h2>
+          <p className="text-sm text-slate-500 mb-6 flex-1">
+            Apply for certificates, renovation permissions, and clearance
+            letters.
+          </p>
+          <div className="flex gap-3">
+            <Link
+              className="rounded-xl bg-amber-600 px-4 py-2 text-white font-medium text-sm flex-1 text-center hover:bg-amber-700 transition-colors"
+              href="/resident/requests"
+            >
+              My Requests
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+            <Users className="size-5" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Community Calendar</h2>
+          <p className="text-sm text-slate-500 mb-6 flex-1">
+            View scheduled society meetings, shutdowns, and notices.
+          </p>
+          <div className="flex gap-3">
+            <Link
+              className="rounded-xl bg-sky-600 px-4 py-2 text-white font-medium text-sm flex-1 text-center hover:bg-sky-700 transition-colors"
+              href="/resident/community"
+            >
+              Calendar & Notices
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col">
+          <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+            <AlertTriangle className="size-5" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Emergency Contacts</h2>
+          <p className="text-sm text-slate-500 mb-6 flex-1">
+            Direct tap-to-call emergency directory for security and medical
+            rescue.
+          </p>
+          <div className="flex gap-3">
+            <Link
+              className="rounded-xl bg-rose-600 px-4 py-2 text-white font-medium text-sm flex-1 text-center hover:bg-rose-700 transition-colors"
+              href="/resident/emergency"
+            >
+              Emergency Directory
+            </Link>
+          </div>
+        </Card>
       </div>
     </div>
   );
