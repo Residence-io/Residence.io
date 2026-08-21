@@ -1467,6 +1467,35 @@ export class FinanceService {
             version: { increment: 1 },
           },
         });
+
+        const activeBankAccount = await tx.societyBankAccount.findFirst({
+          where: { societyId: actor.societyId, isActive: true },
+          orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+        });
+
+        if (activeBankAccount) {
+          await tx.societyBankTransaction.create({
+            data: {
+              societyId: actor.societyId,
+              bankAccountId: activeBankAccount.id,
+              direction: 'CREDIT',
+              type: 'RESIDENT_PAYMENT',
+              amount: payment.amount,
+              currency: payment.currency,
+              paymentId: payment.id,
+              reference: payment.transactionReference ?? payment.id,
+              occurredAt: payment.paymentDate,
+              createdByUserId: actor.id,
+            },
+          });
+          await tx.societyBankAccount.update({
+            where: { id: activeBankAccount.id },
+            data: {
+              currentBalance: { increment: payment.amount },
+            },
+          });
+        }
+
         await tx.outboxEvent.create({
           data: {
             aggregateType: 'Payment',

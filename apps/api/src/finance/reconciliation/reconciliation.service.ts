@@ -23,6 +23,19 @@ export class ReconciliationService {
     private readonly audit: AuditService,
   ) {}
 
+  private sanitizeCsvField(val: string): string {
+    const trimmed = val.trim();
+    if (
+      trimmed.startsWith('=') ||
+      trimmed.startsWith('+') ||
+      trimmed.startsWith('-') ||
+      trimmed.startsWith('@')
+    ) {
+      return `'${trimmed}`;
+    }
+    return trimmed;
+  }
+
   async importStatementCsv(
     societyId: string,
     userId: string,
@@ -37,69 +50,54 @@ export class ReconciliationService {
       throw new NotFoundException('Bank account not found.');
     }
 
-    const lines = csvContent.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    const lines = csvContent
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
     if (lines.length < 2) {
-      throw new BadRequestException('CSV file is empty or missing data rows.');
+      throw new BadRequestException('CSV file is empty or has no data rows.');
     }
 
-    // Anti formula injection sanitization function
-    const sanitize = (val: string) => {
-      const cleaned = val.replace(/^["']|["']$/g, '').trim();
-      if (/^[=+-@]/.test(cleaned)) return `'${cleaned}`;
-      return cleaned;
-    };
-
+    const dataRows = lines.slice(1);
     const parsedLines: Array<{
       transactionDate: Date;
       description: string;
-      reference?: string;
+      reference: string | null;
       debit: Decimal;
       credit: Decimal;
-      balance?: Decimal;
+      balance: Decimal | null;
     }> = [];
 
-    // Parse header and rows (Date, Description, Reference, Debit, Credit, Balance)
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map((c) => sanitize(c));
-      if (cols.length >= 3) {
-        const date = new Date(cols[0]);
-        if (isNaN(date.getTime())) continue;
+    for (const row of dataRows) {
+      const parts = row.split(',').map((p) => this.sanitizeCsvField(p));
+      if (parts.length < 5) continue;
+      const [dateStr, desc, ref, debitStr, creditStr, balStr] = parts;
+      const txDate = new Date(dateStr);
+      if (isNaN(txDate.getTime())) continue;
 
-        const description = cols[1] || 'Bank Transaction';
-        const reference = cols[2] || undefined;
-        const debit =
-          cols[3] && !isNaN(Number(cols[3]))
-            ? new Decimal(cols[3])
-            : new Decimal(0);
-        const credit =
-          cols[4] && !isNaN(Number(cols[4]))
-            ? new Decimal(cols[4])
-            : new Decimal(0);
-        const balance =
-          cols[5] && !isNaN(Number(cols[5])) ? new Decimal(cols[5]) : undefined;
+      const debit = new Decimal(parseFloat(debitStr) || 0);
+      const credit = new Decimal(parseFloat(creditStr) || 0);
+      const balance = balStr ? new Decimal(parseFloat(balStr) || 0) : null;
 
-        parsedLines.push({
-          transactionDate: date,
-          description,
-          reference,
-          debit,
-          credit,
-          balance,
-        });
-      }
+      parsedLines.push({
+        transactionDate: txDate,
+        description: desc || 'Bank transaction',
+        reference: ref || null,
+        debit,
+        credit,
+        balance,
+      });
     }
 
-    if (!parsedLines.length) {
-      throw new BadRequestException(
-        'No valid transaction rows parsed from CSV.',
-      );
+    if (parsedLines.length === 0) {
+      throw new BadRequestException('No valid transaction rows found in CSV.');
     }
 
-    const sortedDates = [...parsedLines].sort(
+    parsedLines.sort(
       (a, b) => a.transactionDate.getTime() - b.transactionDate.getTime(),
     );
-    const startDate = sortedDates[0].transactionDate;
-    const endDate = sortedDates[sortedDates.length - 1].transactionDate;
+    const startDate = parsedLines[0].transactionDate;
+    const endDate = parsedLines[parsedLines.length - 1].transactionDate;
 
     const statement = await this.prisma.$transaction(async (tx) => {
       const stmt = await tx.bankStatement.create({
@@ -114,10 +112,10 @@ export class ReconciliationService {
             create: parsedLines.map((l) => ({
               transactionDate: l.transactionDate,
               description: l.description,
-              reference: l.reference || null,
+              reference: l.reference,
               debit: l.debit,
               credit: l.credit,
-              balance: l.balance || null,
+              balance: l.balance,
               status: BankStatementLineStatus.UNMATCHED,
             })),
           },
@@ -185,6 +183,21 @@ export class ReconciliationService {
       );
     }
 
+    // One-to-one protection: Check if target internal transaction is already matched to another statement line
+    const alreadyMatchedInternal =
+      await this.prisma.bankStatementLine.findFirst({
+        where: {
+          matchedEntityType: dto.matchedEntityType,
+          matchedEntityId: dto.matchedEntityId,
+          status: BankStatementLineStatus.MATCHED,
+        },
+      });
+    if (alreadyMatchedInternal) {
+      throw new ConflictException(
+        'This internal transaction has already been matched to another statement line.',
+      );
+    }
+
     const updateResult = await this.prisma.bankStatementLine.updateMany({
       where: {
         id: lineId,
@@ -235,16 +248,16 @@ export class ReconciliationService {
       throw new NotFoundException('Bank account not found.');
     }
 
-    const ledgerBalance = new Decimal(bankAccount.currentBalance);
-    const stmtBalance = new Decimal(dto.statementBalance);
-    const difference = stmtBalance.sub(ledgerBalance);
+    const statementBalance = new Decimal(dto.statementBalance);
+    const ledgerBalance = bankAccount.currentBalance;
+    const difference = statementBalance.sub(ledgerBalance);
 
     const rec = await this.prisma.bankReconciliation.create({
       data: {
         societyId,
         bankAccountId: dto.bankAccountId,
         reconciliationDate: new Date(dto.reconciliationDate),
-        statementBalance: stmtBalance,
+        statementBalance,
         ledgerBalance,
         difference,
         status: BankReconciliationStatus.COMPLETED,
@@ -262,8 +275,8 @@ export class ReconciliationService {
       targetId: rec.id,
       outcome: 'SUCCESS',
       safeMetadata: {
-        statementBalance: Number(stmtBalance),
         difference: Number(difference),
+        status: rec.status,
       },
     });
 

@@ -5,6 +5,10 @@ import {
   CreateBankAccountDto,
   UpdateBankAccountDto,
 } from '../dto/finance-expansion.dto';
+import {
+  BankTransactionDirection,
+  BankTransactionType,
+} from '../../generated/prisma/client';
 import { Decimal } from '@prisma/client/runtime/client';
 
 @Injectable()
@@ -45,44 +49,64 @@ export class BankingService {
     userId: string,
     dto: CreateBankAccountDto,
   ) {
-    if (dto.isDefault) {
-      await this.prisma.societyBankAccount.updateMany({
-        where: { societyId, isDefault: true },
-        data: { isDefault: false },
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.isDefault) {
+        await tx.societyBankAccount.updateMany({
+          where: { societyId, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+
+      const openingBalance = new Decimal(dto.openingBalance || 0);
+
+      const account = await tx.societyBankAccount.create({
+        data: {
+          societyId,
+          bankName: dto.bankName,
+          accountTitle: dto.accountTitle,
+          accountNumberMasked: dto.accountNumberMasked,
+          iban: dto.iban || null,
+          branchCode: dto.branchCode || null,
+          currency: dto.currency || 'PKR',
+          openingBalance,
+          currentBalance: openingBalance,
+          isDefault: dto.isDefault || false,
+          isActive: true,
+          depositInstructions: dto.depositInstructions || null,
+        },
       });
-    }
 
-    const account = await this.prisma.societyBankAccount.create({
-      data: {
+      if (openingBalance.gt(0)) {
+        await tx.societyBankTransaction.create({
+          data: {
+            societyId,
+            bankAccountId: account.id,
+            direction: BankTransactionDirection.CREDIT,
+            type: BankTransactionType.OPENING_BALANCE,
+            amount: openingBalance,
+            currency: account.currency,
+            reference: 'OPENING-BALANCE',
+            occurredAt: new Date(),
+            createdByUserId: userId,
+          },
+        });
+      }
+
+      await this.audit.recordSafely({
         societyId,
-        bankName: dto.bankName,
-        accountTitle: dto.accountTitle,
-        accountNumberMasked: dto.accountNumberMasked,
-        iban: dto.iban || null,
-        branchCode: dto.branchCode || null,
-        currency: dto.currency || 'PKR',
-        openingBalance: new Decimal(dto.openingBalance || 0),
-        currentBalance: new Decimal(dto.openingBalance || 0),
-        isDefault: dto.isDefault || false,
-        isActive: true,
-        depositInstructions: dto.depositInstructions || null,
-      },
-    });
+        actorUserId: userId,
+        action: 'BANK_ACCOUNT_CREATED',
+        targetType: 'SocietyBankAccount',
+        targetId: account.id,
+        outcome: 'SUCCESS',
+        safeMetadata: {
+          bankName: account.bankName,
+          accountTitle: account.accountTitle,
+        },
+      });
 
-    await this.audit.recordSafely({
-      societyId,
-      actorUserId: userId,
-      action: 'BANK_ACCOUNT_CREATED',
-      targetType: 'SocietyBankAccount',
-      targetId: account.id,
-      outcome: 'SUCCESS',
-      safeMetadata: {
-        bankName: account.bankName,
-        accountTitle: account.accountTitle,
-      },
+      return account;
     });
-
-    return account;
   }
 
   async updateAccount(
@@ -108,18 +132,14 @@ export class BankingService {
     const updated = await this.prisma.societyBankAccount.update({
       where: { id },
       data: {
-        ...(dto.bankName ? { bankName: dto.bankName } : {}),
-        ...(dto.accountTitle ? { accountTitle: dto.accountTitle } : {}),
-        ...(dto.accountNumberMasked
-          ? { accountNumberMasked: dto.accountNumberMasked }
-          : {}),
-        ...(dto.iban !== undefined ? { iban: dto.iban } : {}),
-        ...(dto.branchCode !== undefined ? { branchCode: dto.branchCode } : {}),
-        ...(dto.isDefault !== undefined ? { isDefault: dto.isDefault } : {}),
-        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        ...(dto.depositInstructions !== undefined
-          ? { depositInstructions: dto.depositInstructions }
-          : {}),
+        bankName: dto.bankName,
+        accountTitle: dto.accountTitle,
+        accountNumberMasked: dto.accountNumberMasked,
+        iban: dto.iban,
+        branchCode: dto.branchCode,
+        isDefault: dto.isDefault,
+        isActive: dto.isActive,
+        depositInstructions: dto.depositInstructions,
       },
     });
 
@@ -128,11 +148,44 @@ export class BankingService {
       actorUserId: userId,
       action: 'BANK_ACCOUNT_UPDATED',
       targetType: 'SocietyBankAccount',
-      targetId: account.id,
+      targetId: id,
       outcome: 'SUCCESS',
-      safeMetadata: { bankName: updated.bankName, isActive: updated.isActive },
+      safeMetadata: { bankName: updated.bankName },
     });
 
     return updated;
+  }
+
+  async reconstructBalance(societyId: string, bankAccountId: string) {
+    const account = await this.prisma.societyBankAccount.findFirst({
+      where: { id: bankAccountId, societyId },
+    });
+    if (!account) {
+      throw new NotFoundException('Bank account not found.');
+    }
+
+    const transactions = await this.prisma.societyBankTransaction.findMany({
+      where: { bankAccountId, societyId },
+    });
+
+    const totalCredits = transactions
+      .filter((t) => t.direction === BankTransactionDirection.CREDIT)
+      .reduce((sum, t) => sum.add(t.amount), new Decimal(0));
+
+    const totalDebits = transactions
+      .filter((t) => t.direction === BankTransactionDirection.DEBIT)
+      .reduce((sum, t) => sum.add(t.amount), new Decimal(0));
+
+    const calculatedBalance = totalCredits.sub(totalDebits);
+
+    return {
+      bankAccountId: account.id,
+      storedCurrentBalance: account.currentBalance.toFixed(2),
+      calculatedBalance: calculatedBalance.toFixed(2),
+      isReconciled: calculatedBalance.equals(account.currentBalance),
+      totalCredits: totalCredits.toFixed(2),
+      totalDebits: totalDebits.toFixed(2),
+      transactionCount: transactions.length,
+    };
   }
 }

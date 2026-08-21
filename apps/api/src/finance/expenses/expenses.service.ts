@@ -11,7 +11,11 @@ import {
   ReviewExpenseDto,
   PayExpenseDto,
 } from '../dto/finance-expansion.dto';
-import { ExpenseStatus } from '../../generated/prisma/client';
+import {
+  ExpenseStatus,
+  BankTransactionDirection,
+  BankTransactionType,
+} from '../../generated/prisma/client';
 import { randomBytes } from 'node:crypto';
 import { Decimal } from '@prisma/client/runtime/client';
 
@@ -22,17 +26,17 @@ export class ExpensesService {
     private readonly audit: AuditService,
   ) {}
 
-  private generateExpenseNumber(): string {
-    const year = new Date().getFullYear();
-    const rand = randomBytes(5).toString('hex').toUpperCase();
-    return `EXP-${year}-${rand}`;
+  private generateExpenseNumber(year: number): string {
+    const randomHex = randomBytes(5).toString('hex').toUpperCase();
+    return `EXP-${year}-${randomHex}`;
   }
 
   async listExpenses(
     societyId: string,
-    query?: {
+    filters?: {
       status?: ExpenseStatus;
-      category?: any;
+      category?: string;
+      vendorId?: string;
       startDate?: string;
       endDate?: string;
     },
@@ -40,13 +44,16 @@ export class ExpensesService {
     return this.prisma.expense.findMany({
       where: {
         societyId,
-        ...(query?.status ? { status: query.status } : {}),
-        ...(query?.category ? { category: query.category } : {}),
-        ...(query?.startDate && query?.endDate
+        ...(filters?.status ? { status: filters.status } : {}),
+        ...(filters?.category ? { category: filters.category as any } : {}),
+        ...(filters?.vendorId ? { vendorId: filters.vendorId } : {}),
+        ...(filters?.startDate || filters?.endDate
           ? {
               expenseDate: {
-                gte: new Date(query.startDate),
-                lte: new Date(query.endDate),
+                ...(filters.startDate
+                  ? { gte: new Date(filters.startDate) }
+                  : {}),
+                ...(filters.endDate ? { lte: new Date(filters.endDate) } : {}),
               },
             }
           : {}),
@@ -54,7 +61,7 @@ export class ExpensesService {
       include: {
         vendor: { select: { id: true, name: true, vendorCode: true } },
         bankAccount: {
-          select: { id: true, bankName: true, accountTitle: true },
+          select: { id: true, bankName: true, accountNumberMasked: true },
         },
         approvedByUser: { select: { id: true, displayName: true } },
       },
@@ -82,67 +89,66 @@ export class ExpensesService {
     userId: string,
     dto: CreateExpenseDto,
   ) {
-    let attempts = 0;
-    const maxAttempts = 3;
-    let expense: any = null;
+    const year = new Date().getFullYear();
+    const amount = new Decimal(dto.amount);
+    if (amount.lte(0)) {
+      throw new BadRequestException('Expense amount must be positive.');
+    }
 
-    while (attempts < maxAttempts) {
+    if (dto.vendorId) {
+      const vendor = await this.prisma.vendor.findFirst({
+        where: { id: dto.vendorId, societyId },
+      });
+      if (!vendor) {
+        throw new NotFoundException('Vendor not found.');
+      }
+    }
+
+    let attempts = 0;
+    while (attempts < 3) {
+      attempts++;
+      const expenseNumber = this.generateExpenseNumber(year);
       try {
-        const expenseNumber = this.generateExpenseNumber();
-        expense = await this.prisma.expense.create({
+        const expense = await this.prisma.expense.create({
           data: {
             societyId,
             expenseNumber,
-            vendorId: dto.vendorId || null,
             category: dto.category,
             description: dto.description,
             expenseDate: new Date(dto.expenseDate),
-            amount: new Decimal(dto.amount),
+            amount,
             currency: dto.currency || 'PKR',
-            status: ExpenseStatus.SUBMITTED,
+            vendorId: dto.vendorId || null,
             invoiceNumber: dto.invoiceNumber || null,
             invoiceObjectKey: dto.invoiceObjectKey || null,
-            paymentMethod: dto.paymentMethod || null,
             bankAccountId: dto.bankAccountId || null,
+            status: ExpenseStatus.SUBMITTED,
             notes: dto.notes || null,
           },
         });
-        break;
+
+        await this.audit.recordSafely({
+          societyId,
+          actorUserId: userId,
+          action: 'EXPENSE_CREATED',
+          targetType: 'Expense',
+          targetId: expense.id,
+          outcome: 'SUCCESS',
+          safeMetadata: {
+            expenseNumber: expense.expenseNumber,
+            amount: Number(expense.amount),
+            category: expense.category,
+          },
+        });
+
+        return expense;
       } catch (err: any) {
-        if (
-          err?.code === 'P2002' &&
-          (err?.meta?.target?.includes('expense_number') ||
-            err?.meta?.target?.includes('expenseNumber'))
-        ) {
-          attempts++;
-          if (attempts >= maxAttempts) throw err;
+        if (err?.code === 'P2002' && attempts < 3) {
           continue;
         }
         throw err;
       }
     }
-
-    if (!expense) {
-      throw new BadRequestException(
-        'Could not generate unique expense number. Please try again.',
-      );
-    }
-
-    await this.audit.recordSafely({
-      societyId,
-      actorUserId: userId,
-      action: 'EXPENSE_CREATED',
-      targetType: 'Expense',
-      targetId: expense.id,
-      outcome: 'SUCCESS',
-      safeMetadata: {
-        expenseNumber: expense.expenseNumber,
-        amount: dto.amount,
-        category: dto.category,
-      },
-    });
-
-    return expense;
   }
 
   async reviewExpense(
@@ -245,8 +251,23 @@ export class ExpensesService {
         where: { id, societyId },
       });
 
-      // 2. If bank account provided, deduct balance atomically
+      // 2. If bank account provided, deduct balance and record immutable bank transaction
       if (updated?.bankAccountId) {
+        await tx.societyBankTransaction.create({
+          data: {
+            societyId,
+            bankAccountId: updated.bankAccountId,
+            direction: BankTransactionDirection.DEBIT,
+            type: BankTransactionType.EXPENSE_PAYMENT,
+            amount: updated.amount,
+            currency: updated.currency,
+            expenseId: updated.id,
+            reference: updated.expenseNumber,
+            occurredAt: updated.paidAt || new Date(),
+            createdByUserId: actorUserId,
+          },
+        });
+
         await tx.societyBankAccount.update({
           where: { id: updated.bankAccountId },
           data: {
@@ -277,7 +298,7 @@ export class ExpensesService {
     societyId: string,
     id: string,
     actorUserId: string,
-    reason: string,
+    reason?: string,
   ) {
     const expense = await this.prisma.expense.findFirst({
       where: { id, societyId },
@@ -288,7 +309,7 @@ export class ExpensesService {
 
     if (expense.status === ExpenseStatus.PAID) {
       throw new BadRequestException(
-        'Paid expenses cannot be voided directly without accounting reversal.',
+        'Paid expenses cannot be voided directly. An authorized reversal adjustment must be recorded.',
       );
     }
 
@@ -296,7 +317,7 @@ export class ExpensesService {
       where: { id },
       data: {
         status: ExpenseStatus.VOID,
-        rejectionReason: reason,
+        notes: reason ? `VOID: ${reason}` : expense.notes,
       },
     });
 
@@ -305,9 +326,9 @@ export class ExpensesService {
       actorUserId,
       action: 'EXPENSE_VOIDED',
       targetType: 'Expense',
-      targetId: expense.id,
+      targetId: id,
       outcome: 'SUCCESS',
-      safeMetadata: { expenseNumber: expense.expenseNumber, reason },
+      safeMetadata: { reason },
     });
 
     return updated;

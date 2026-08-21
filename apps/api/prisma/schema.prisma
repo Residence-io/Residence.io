@@ -563,6 +563,7 @@ model Society {
   bankStatements          BankStatement[]
   bankReconciliations     BankReconciliation[]
   paymentProviderConfigs  PaymentProviderConfig[]
+  societyBankTransactions SocietyBankTransaction[]
 
   @@index([status])
   @@map("society")
@@ -628,6 +629,7 @@ model UserAccount {
   createdCommunityEvents     CommunityEvent[]           @relation("CreatedCommunityEvents")
   approvedExpenses           Expense[]                  @relation("ExpenseApprover")
   approvedBudgets            Budget[]                   @relation("BudgetApprover")
+  societyBankTransactions    SocietyBankTransaction[]
 
   @@index([societyId, status])
   @@map("user_account")
@@ -1249,6 +1251,7 @@ model Payment {
   reversal             PaymentReversal?
   refunds              Refund[]
   receipt              Receipt?
+  bankTransactions     SocietyBankTransaction[]
 
   @@unique([societyId, transactionReference], name: "uk_payment_society_reference")
   @@index([societyId, status, paymentDate])
@@ -3338,10 +3341,11 @@ model Expense {
   updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   version          Int             @default(0)
 
-  society        Society             @relation(fields: [societyId], references: [id], onDelete: Restrict)
-  vendor         Vendor?             @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  bankAccount    SocietyBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
-  approvedByUser UserAccount?        @relation("ExpenseApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  society          Society                  @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  vendor           Vendor?                  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  bankAccount      SocietyBankAccount?      @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  approvedByUser   UserAccount?             @relation("ExpenseApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  bankTransactions SocietyBankTransaction[]
 
   @@index([societyId, status, expenseDate])
   @@map("expense")
@@ -3364,10 +3368,11 @@ model SocietyBankAccount {
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  society         Society              @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  society         Society                  @relation(fields: [societyId], references: [id], onDelete: Restrict)
   expenses        Expense[]
   statements      BankStatement[]
   reconciliations BankReconciliation[]
+  transactions    SocietyBankTransaction[]
 
   @@index([societyId, isActive])
   @@map("society_bank_account")
@@ -3443,6 +3448,7 @@ model BankStatementLine {
   matchedEntityId   String?                 @map("matched_entity_id") @db.Uuid
   matchedAt         DateTime?               @map("matched_at") @db.Timestamptz(6)
   matchedByUserId   String?                 @map("matched_by_user_id") @db.Uuid
+  bankTransaction   SocietyBankTransaction?
 
   statement BankStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
 
@@ -3486,4 +3492,45 @@ model PaymentProviderConfig {
 
   @@unique([societyId, providerType])
   @@map("payment_provider_config")
+}
+
+enum BankTransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum BankTransactionType {
+  OPENING_BALANCE
+  RESIDENT_PAYMENT
+  EXPENSE_PAYMENT
+  REFUND
+  ADJUSTMENT
+  OTHER
+}
+
+model SocietyBankTransaction {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String                   @map("society_id") @db.Uuid
+  bankAccountId   String                   @map("bank_account_id") @db.Uuid
+  direction       BankTransactionDirection
+  type            BankTransactionType
+  amount          Decimal                  @db.Decimal(14, 2)
+  currency        String                   @default("PKR") @db.VarChar(3)
+  paymentId       String?                  @map("payment_id") @db.Uuid
+  expenseId       String?                  @map("expense_id") @db.Uuid
+  statementLineId String?                  @unique @map("statement_line_id") @db.Uuid
+  reference       String?                  @db.VarChar(120)
+  occurredAt      DateTime                 @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdByUserId String?                  @map("created_by_user_id") @db.Uuid
+
+  society       Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  bankAccount   SocietyBankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  payment       Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  expense       Expense?           @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  statementLine BankStatementLine? @relation(fields: [statementLineId], references: [id], onDelete: SetNull)
+  createdByUser UserAccount?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([societyId, bankAccountId, occurredAt])
+  @@map("society_bank_transaction")
 }

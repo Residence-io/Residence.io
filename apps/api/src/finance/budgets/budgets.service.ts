@@ -17,7 +17,7 @@ export class BudgetsService {
   ) {}
 
   async listBudgets(societyId: string) {
-    const budgets = await this.prisma.budget.findMany({
+    return this.prisma.budget.findMany({
       where: { societyId },
       include: {
         lines: true,
@@ -25,8 +25,6 @@ export class BudgetsService {
       },
       orderBy: { financialYear: 'desc' },
     });
-
-    return budgets;
   }
 
   async getBudgetById(societyId: string, id: string) {
@@ -41,33 +39,54 @@ export class BudgetsService {
       throw new NotFoundException('Budget not found.');
     }
 
-    const yearMatch = budget.financialYear.match(/(\d{4})/g);
-    const startYear = yearMatch
-      ? parseInt(yearMatch[0], 10)
-      : new Date().getFullYear();
-    const endYear =
-      yearMatch && yearMatch.length > 1
-        ? parseInt(yearMatch[1], 10)
-        : startYear;
-    const startDate = new Date(Date.UTC(startYear, 0, 1));
-    const endDate = new Date(Date.UTC(endYear, 11, 31, 23, 59, 59, 999));
+    // Parse financial year boundaries:
+    // "2026-2027" -> 2026-07-01 inclusive to 2027-07-01 exclusive
+    // "2026" -> 2026-01-01 inclusive to 2027-01-01 exclusive
+    let startDate: Date;
+    let endDate: Date;
 
-    // Dynamic Actual spend calculation from authoritative paid expenses within financial year
+    const multiYearMatch = budget.financialYear.match(/^(\d{4})-(\d{4})$/);
+    if (multiYearMatch) {
+      const startYear = parseInt(multiYearMatch[1], 10);
+      const endYear = parseInt(multiYearMatch[2], 10);
+      startDate = new Date(Date.UTC(startYear, 6, 1, 0, 0, 0, 0)); // July 1
+      endDate = new Date(Date.UTC(endYear, 6, 1, 0, 0, 0, 0)); // July 1 next year (exclusive)
+    } else {
+      const singleYearMatch = budget.financialYear.match(/^(\d{4})$/);
+      const year = singleYearMatch
+        ? parseInt(singleYearMatch[1], 10)
+        : new Date().getFullYear();
+      startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+      endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+    }
+
+    // Dynamic Actual and Committed spend calculation within financial year boundaries
     const expenses = await this.prisma.expense.findMany({
       where: {
         societyId,
-        status: ExpenseStatus.PAID,
+        status: { in: [ExpenseStatus.PAID, ExpenseStatus.APPROVED] },
         expenseDate: {
           gte: startDate,
-          lte: endDate,
+          lt: endDate,
         },
       },
     });
 
     const linesWithActuals = budget.lines.map((line) => {
       const actualAmount = expenses
-        .filter((e) => e.category === line.category)
+        .filter(
+          (e) =>
+            e.category === line.category && e.status === ExpenseStatus.PAID,
+        )
         .reduce((sum, e) => sum.add(e.amount), new Decimal(0));
+
+      const committedAmount = expenses
+        .filter(
+          (e) =>
+            e.category === line.category && e.status === ExpenseStatus.APPROVED,
+        )
+        .reduce((sum, e) => sum.add(e.amount), new Decimal(0));
+
       const planned = new Decimal(line.plannedAmount);
       const variance = planned.sub(actualAmount);
 
@@ -75,12 +94,15 @@ export class BudgetsService {
         ...line,
         plannedAmount: planned.toFixed(2),
         actualAmount: actualAmount.toFixed(2),
+        committedAmount: committedAmount.toFixed(2),
         variance: variance.toFixed(2),
       };
     });
 
     return {
       ...budget,
+      fiscalYearStart: startDate.toISOString(),
+      fiscalYearEnd: endDate.toISOString(),
       lines: linesWithActuals,
     };
   }
@@ -100,8 +122,8 @@ export class BudgetsService {
         societyId,
         name: dto.name,
         financialYear: dto.financialYear,
-        status: BudgetStatus.DRAFT,
         notes: dto.notes || null,
+        status: BudgetStatus.DRAFT,
         lines: {
           create: dto.lines.map((l) => ({
             category: l.category,
@@ -120,7 +142,11 @@ export class BudgetsService {
       targetType: 'Budget',
       targetId: budget.id,
       outcome: 'SUCCESS',
-      safeMetadata: { name: budget.name, financialYear: budget.financialYear },
+      safeMetadata: {
+        name: budget.name,
+        financialYear: budget.financialYear,
+        lineCount: budget.lines?.length ?? dto.lines.length,
+      },
     });
 
     return budget;
@@ -139,12 +165,15 @@ export class BudgetsService {
       throw new NotFoundException('Budget not found.');
     }
 
+    if (budget.status !== BudgetStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT budgets can be updated.');
+    }
+
     const updated = await this.prisma.budget.update({
       where: { id },
       data: {
-        ...(dto.name ? { name: dto.name } : {}),
-        ...(dto.status ? { status: dto.status } : {}),
-        ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
+        name: dto.name,
+        notes: dto.notes,
       },
       include: { lines: true },
     });
@@ -154,9 +183,9 @@ export class BudgetsService {
       actorUserId: userId,
       action: 'BUDGET_UPDATED',
       targetType: 'Budget',
-      targetId: budget.id,
+      targetId: id,
       outcome: 'SUCCESS',
-      safeMetadata: { name: updated.name, status: updated.status },
+      safeMetadata: { name: updated.name },
     });
 
     return updated;
@@ -170,7 +199,11 @@ export class BudgetsService {
       throw new NotFoundException('Budget not found.');
     }
 
-    const updated = await this.prisma.budget.update({
+    if (budget.status !== BudgetStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT budgets can be approved.');
+    }
+
+    const approved = await this.prisma.budget.update({
       where: { id },
       data: {
         status: BudgetStatus.APPROVED,
@@ -184,11 +217,11 @@ export class BudgetsService {
       actorUserId: userId,
       action: 'BUDGET_APPROVED',
       targetType: 'Budget',
-      targetId: budget.id,
+      targetId: id,
       outcome: 'SUCCESS',
-      safeMetadata: { name: budget.name, financialYear: budget.financialYear },
+      safeMetadata: { financialYear: approved.financialYear },
     });
 
-    return updated;
+    return approved;
   }
 }
