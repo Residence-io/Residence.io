@@ -195,6 +195,22 @@ export class MoveInOutService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      const existingActiveOccupancy = await tx.residentOccupancy.findFirst({
+        where: {
+          unitId: request.unitId,
+          endDate: null,
+          primaryResident: true,
+        },
+      });
+      if (
+        existingActiveOccupancy &&
+        existingActiveOccupancy.residentId !== request.residentId
+      ) {
+        throw new BadRequestException(
+          'Cannot complete move-in: Unit already has an active primary occupant.',
+        );
+      }
+
       await tx.residentOccupancy.create({
         data: {
           residentId: request.residentId,
@@ -202,6 +218,7 @@ export class MoveInOutService {
           occupancyType: request.occupancyType,
           startDate: request.desiredMoveInDate,
           endDate: null,
+          primaryResident: true,
         },
       });
 
@@ -423,6 +440,20 @@ export class MoveInOutService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Recheck authoritative financial dues balance before finalizing move-out
+      const pendingDues = await tx.monthlyDue.findMany({
+        where: {
+          societyId,
+          residentId: request.residentId,
+          status: { in: ['PENDING', 'PARTIALLY_PAID', 'OVERDUE'] },
+        },
+      });
+      if (pendingDues.length > 0 && request.duesClearanceStatus !== 'WAIVED') {
+        throw new BadRequestException(
+          'Cannot complete move-out: Resident has outstanding unpaid maintenance dues.',
+        );
+      }
+
       // 1. Close occupancy
       await tx.residentOccupancy.updateMany({
         where: {
@@ -444,7 +475,6 @@ export class MoveInOutService {
         },
         data: {
           status: 'REVOKED',
-
           notes: 'Move-out completed',
         },
       });

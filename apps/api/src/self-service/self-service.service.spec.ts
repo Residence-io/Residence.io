@@ -39,6 +39,9 @@ describe('SelfServiceModule Services', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    monthlyDue: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     communityEvent: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -81,7 +84,15 @@ describe('SelfServiceModule Services', () => {
     recordSafely: jest.fn().mockResolvedValue(undefined),
   };
 
-  const mockStorage = {};
+  const mockStorage = {
+    store: jest.fn().mockResolvedValue({
+      objectKey: 'res-1/mock.pdf',
+      mediaType: 'application/pdf',
+      sizeBytes: 100,
+      checksumSha256: 'mocksha256',
+      originalFileName: 'cnic.pdf',
+    }),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -120,13 +131,14 @@ describe('SelfServiceModule Services', () => {
         'res-1',
         'user-1',
         'IDENTITY_DOCUMENT' as any,
-        Buffer.from('test pdf content'),
+        Buffer.from('%PDF-test-content'),
         'cnic.pdf',
         'application/pdf',
         '42101-1234567-1',
       );
 
       expect(res.id).toBe('doc-1');
+      expect(mockStorage.store).toHaveBeenCalled();
       expect(mockAudit.recordSafely).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'RESIDENT_DOCUMENT_UPLOADED' }),
       );
@@ -253,6 +265,7 @@ describe('SelfServiceModule Services', () => {
         desiredMoveInDate: new Date('2026-09-01'),
         status: 'APPROVED',
       });
+      mockPrisma.residentOccupancy.findFirst.mockResolvedValue(null);
       mockPrisma.moveInRequest.update.mockResolvedValue({
         id: 'mov-1',
         status: 'COMPLETED',
@@ -267,6 +280,27 @@ describe('SelfServiceModule Services', () => {
       });
     });
 
+    it('rejects move-in completion if another active primary occupant exists', async () => {
+      mockPrisma.moveInRequest.findFirst.mockResolvedValue({
+        id: 'mov-1',
+        societyId: 'soc-1',
+        residentId: 'res-1',
+        unitId: 'unit-1',
+        occupancyType: 'TENANT',
+        desiredMoveInDate: new Date('2026-09-01'),
+        status: 'APPROVED',
+      });
+      mockPrisma.residentOccupancy.findFirst.mockResolvedValue({
+        id: 'occ-existing',
+        residentId: 'res-other',
+        unitId: 'unit-1',
+      });
+
+      await expect(
+        moveService.completeMoveIn('soc-1', 'mov-1', 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('completes move-out and closes active occupancy & permits', async () => {
       mockPrisma.moveOutRequest.findFirst.mockResolvedValue({
         id: 'mout-1',
@@ -276,6 +310,7 @@ describe('SelfServiceModule Services', () => {
         desiredMoveOutDate: new Date('2026-09-30'),
         status: 'APPROVED',
       });
+      mockPrisma.monthlyDue.findMany.mockResolvedValue([]);
       mockPrisma.moveOutRequest.update.mockResolvedValue({
         id: 'mout-1',
         status: 'COMPLETED',
@@ -292,6 +327,24 @@ describe('SelfServiceModule Services', () => {
       expect(mockAudit.recordSafely).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'MOVE_OUT_COMPLETED' }),
       );
+    });
+
+    it('rejects move-out completion if resident has unpaid dues', async () => {
+      mockPrisma.moveOutRequest.findFirst.mockResolvedValue({
+        id: 'mout-1',
+        societyId: 'soc-1',
+        residentId: 'res-1',
+        unitId: 'unit-1',
+        duesClearanceStatus: 'PENDING',
+        status: 'APPROVED',
+      });
+      mockPrisma.monthlyDue.findMany.mockResolvedValue([
+        { id: 'due-1', status: 'PENDING' },
+      ]);
+
+      await expect(
+        moveService.completeMoveOut('soc-1', 'mout-1', 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

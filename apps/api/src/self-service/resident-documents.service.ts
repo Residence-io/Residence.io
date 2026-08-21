@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PrivateStorageService } from '../resident-storage/private-storage.service';
 import { ResidentDocumentCategory } from '../generated/prisma/client';
-import { createHash } from 'node:crypto';
 
 @Injectable()
 export class ResidentDocumentsService {
@@ -62,20 +61,23 @@ export class ResidentDocumentsService {
       throw new NotFoundException('Resident not found.');
     }
 
-    const checksumSha256 = createHash('sha256')
-      .update(fileBuffer)
-      .digest('hex');
-    const objectKey = `${societyId}/residents/${residentId}/${Date.now()}-${originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const stored = await this.storage.store(
+      residentId,
+      fileBuffer,
+      originalFileName,
+      mediaType,
+      societyId,
+    );
 
     const doc = await this.prisma.residentDocument.create({
       data: {
         residentId,
         category,
-        objectKey,
-        originalFileName,
-        mediaType,
-        sizeBytes: BigInt(fileBuffer.length),
-        checksumSha256,
+        objectKey: stored.objectKey,
+        originalFileName: stored.originalFileName,
+        mediaType: stored.mediaType,
+        sizeBytes: BigInt(stored.sizeBytes),
+        checksumSha256: stored.checksumSha256,
         uploadedByUserId: userId,
         documentNumber,
         issuedAt: issuedAt ? new Date(issuedAt) : null,
