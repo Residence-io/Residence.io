@@ -491,16 +491,17 @@ enum VisitorStatus {
 }
 
 model Society {
-  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug       String        @unique @db.VarChar(80)
-  name       String        @db.VarChar(160)
-  timeZone   String        @default("Asia/Karachi") @map("time_zone") @db.VarChar(80)
-  currency   String        @default("PKR") @db.Char(3)
-  status     SocietyStatus @default(ACTIVE)
-  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  archivedAt DateTime?     @map("archived_at") @db.Timestamptz(6)
-  version    Int           @default(0)
+  id                   String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                 String        @unique @db.VarChar(80)
+  name                 String        @db.VarChar(160)
+  timeZone             String        @default("Asia/Karachi") @map("time_zone") @db.VarChar(80)
+  currency             String        @default("PKR") @db.Char(3)
+  fiscalYearStartMonth Int           @default(7) @map("fiscal_year_start_month")
+  status               SocietyStatus @default(ACTIVE)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt           DateTime?     @map("archived_at") @db.Timestamptz(6)
+  version              Int           @default(0)
 
   users                   UserAccount[]
   roles                   Role[]
@@ -1236,6 +1237,7 @@ model Payment {
   allocationCriteria   Json?                        @map("allocation_criteria") @db.JsonB
   notes                String?                      @db.VarChar(500)
   recordedByUserId     String?                      @map("recorded_by_user_id") @db.Uuid
+  bankAccountId        String?                      @map("bank_account_id") @db.Uuid
   confirmedAt          DateTime?                    @map("confirmed_at") @db.Timestamptz(6)
   reversedAt           DateTime?                    @map("reversed_at") @db.Timestamptz(6)
   createdAt            DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1244,6 +1246,7 @@ model Payment {
   society              Society                      @relation(fields: [societyId], references: [id], onDelete: Restrict)
   resident             Resident                     @relation(fields: [residentId], references: [id], onDelete: Restrict)
   recordedBy           UserAccount?                 @relation("PaymentActor", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  bankAccount          SocietyBankAccount?          @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   allocations          PaymentAllocation[]
   proofs               PaymentProof[]
   providerTransactions PaymentProviderTransaction[]
@@ -2721,6 +2724,7 @@ model FinancialSettingPeriod {
   advancePaymentPolicy     Json               @map("advance_payment_policy")
   refundAndReversalPolicy  Json               @map("refund_and_reversal_policy")
   currency                 String             @db.Char(3)
+  fiscalYearStartMonth     Int                @default(7) @map("fiscal_year_start_month")
   roundingScale            Int                @default(2) @map("rounding_scale")
   effectiveFrom            DateTime           @map("effective_from") @db.Date
   effectiveTo              DateTime?          @map("effective_to") @db.Date
@@ -3370,6 +3374,7 @@ model SocietyBankAccount {
 
   society         Society                  @relation(fields: [societyId], references: [id], onDelete: Restrict)
   expenses        Expense[]
+  payments        Payment[]
   statements      BankStatement[]
   reconciliations BankReconciliation[]
   transactions    SocietyBankTransaction[]
@@ -3435,20 +3440,21 @@ model BankStatement {
 }
 
 model BankStatementLine {
-  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  statementId       String                  @map("statement_id") @db.Uuid
-  transactionDate   DateTime                @map("transaction_date") @db.Date
-  description       String                  @db.VarChar(500)
-  reference         String?                 @db.VarChar(120)
-  debit             Decimal                 @default(0) @db.Decimal(12, 2)
-  credit            Decimal                 @default(0) @db.Decimal(12, 2)
-  balance           Decimal?                @db.Decimal(14, 2)
-  status            BankStatementLineStatus @default(UNMATCHED)
-  matchedEntityType String?                 @map("matched_entity_type") @db.VarChar(50)
-  matchedEntityId   String?                 @map("matched_entity_id") @db.Uuid
-  matchedAt         DateTime?               @map("matched_at") @db.Timestamptz(6)
-  matchedByUserId   String?                 @map("matched_by_user_id") @db.Uuid
-  bankTransaction   SocietyBankTransaction?
+  id                       String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  statementId              String                  @map("statement_id") @db.Uuid
+  transactionDate          DateTime                @map("transaction_date") @db.Date
+  description              String                  @db.VarChar(500)
+  reference                String?                 @db.VarChar(120)
+  debit                    Decimal                 @default(0) @db.Decimal(12, 2)
+  credit                   Decimal                 @default(0) @db.Decimal(12, 2)
+  balance                  Decimal?                @db.Decimal(14, 2)
+  status                   BankStatementLineStatus @default(UNMATCHED)
+  matchedEntityType        String?                 @map("matched_entity_type") @db.VarChar(50)
+  matchedEntityId          String?                 @map("matched_entity_id") @db.Uuid
+  matchedAt                DateTime?               @map("matched_at") @db.Timestamptz(6)
+  matchedByUserId          String?                 @map("matched_by_user_id") @db.Uuid
+  matchedBankTransactionId String?                 @unique @map("matched_bank_transaction_id") @db.Uuid
+  matchedBankTransaction   SocietyBankTransaction? @relation("LineToTx", fields: [matchedBankTransactionId], references: [id], onDelete: SetNull)
 
   statement BankStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
 
@@ -3518,18 +3524,17 @@ model SocietyBankTransaction {
   currency        String                   @default("PKR") @db.VarChar(3)
   paymentId       String?                  @map("payment_id") @db.Uuid
   expenseId       String?                  @map("expense_id") @db.Uuid
-  statementLineId String?                  @unique @map("statement_line_id") @db.Uuid
   reference       String?                  @db.VarChar(120)
   occurredAt      DateTime                 @default(now()) @map("occurred_at") @db.Timestamptz(6)
   createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   createdByUserId String?                  @map("created_by_user_id") @db.Uuid
 
-  society       Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
-  bankAccount   SocietyBankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
-  payment       Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  expense       Expense?           @relation(fields: [expenseId], references: [id], onDelete: SetNull)
-  statementLine BankStatementLine? @relation(fields: [statementLineId], references: [id], onDelete: SetNull)
-  createdByUser UserAccount?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  society              Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  bankAccount          SocietyBankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  payment              Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  expense              Expense?           @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  matchedStatementLine BankStatementLine? @relation("LineToTx")
+  createdByUser        UserAccount?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([societyId, bankAccountId, occurredAt])
   @@map("society_bank_transaction")

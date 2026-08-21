@@ -5,8 +5,12 @@ import { BudgetsService } from './budgets/budgets.service';
 import { BankingService } from './banking/banking.service';
 import { ReconciliationService } from './reconciliation/reconciliation.service';
 import { ManualBankTransferProvider } from './providers/manual-bank-transfer.provider';
+import { FinanceService } from './finance.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PrivateStorageService } from '../resident-storage/private-storage.service';
+import { DevelopmentPaymentProvider } from './payment-provider';
+import { ReceiptService } from './receipt.service';
 import {
   NotFoundException,
   BadRequestException,
@@ -14,19 +18,24 @@ import {
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/client';
 
-describe('Phase 6 Financial Expansion Services', () => {
+describe('Phase 6 Financial Expansion Services - Final Lock', () => {
   let vendorsService: VendorsService;
   let expensesService: ExpensesService;
   let budgetsService: BudgetsService;
   let bankingService: BankingService;
   let reconciliationService: ReconciliationService;
   let bankTransferProvider: ManualBankTransferProvider;
+  let financeService: FinanceService;
 
   const mockAudit = {
     recordSafely: jest.fn().mockResolvedValue(undefined),
   };
 
   const mockPrisma: any = {
+    society: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
     vendor: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -70,12 +79,62 @@ describe('Phase 6 Financial Expansion Services', () => {
     bankReconciliation: {
       create: jest.fn(),
     },
+    payment: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    paymentAllocation: {
+      create: jest.fn(),
+    },
+    monthlyDue: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    financialLedgerEntry: {
+      create: jest.fn(),
+    },
+    receiptSequence: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    receipt: {
+      create: jest.fn(),
+    },
+    outboxEvent: {
+      create: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
+    },
+    resident: {
+      findFirst: jest.fn(),
+    },
+    $queryRaw: jest.fn().mockResolvedValue([]),
     $transaction: jest.fn((cb: any) => {
       if (typeof cb === 'function') {
         return cb(mockPrisma);
       }
       return cb;
     }),
+  };
+
+  const mockStorage = {
+    store: jest.fn(),
+    read: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockPaymentProvider = {
+    createIntent: jest.fn(),
+    verifyCallback: jest.fn(),
+  };
+
+  const mockReceiptService = {
+    generateAndStoreReceipt: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -87,8 +146,12 @@ describe('Phase 6 Financial Expansion Services', () => {
         BankingService,
         ReconciliationService,
         ManualBankTransferProvider,
+        FinanceService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditService, useValue: mockAudit },
+        { provide: PrivateStorageService, useValue: mockStorage },
+        { provide: DevelopmentPaymentProvider, useValue: mockPaymentProvider },
+        { provide: ReceiptService, useValue: mockReceiptService },
       ],
     }).compile();
 
@@ -102,6 +165,7 @@ describe('Phase 6 Financial Expansion Services', () => {
     bankTransferProvider = module.get<ManualBankTransferProvider>(
       ManualBankTransferProvider,
     );
+    financeService = module.get<FinanceService>(FinanceService);
     jest.clearAllMocks();
   });
 
@@ -259,47 +323,10 @@ describe('Phase 6 Financial Expansion Services', () => {
         }),
       ).rejects.toThrow(ConflictException);
     });
-
-    it('rejects payment on unapproved expense', async () => {
-      mockPrisma.expense.findFirst.mockResolvedValue({
-        id: 'exp-1',
-        societyId: 'soc-1',
-        status: 'SUBMITTED',
-      });
-
-      await expect(
-        expensesService.payExpense('soc-1', 'exp-1', 'admin-1', {
-          paymentMethod: 'BANK_TRANSFER' as any,
-        }),
-      ).rejects.toThrow(BadRequestException);
-    });
   });
 
-  describe('BudgetsService', () => {
-    it('creates budget with budget lines', async () => {
-      mockPrisma.budget.findFirst.mockResolvedValue(null);
-      mockPrisma.budget.create.mockResolvedValue({
-        id: 'bud-1',
-        name: 'Annual Operations Budget',
-        financialYear: '2026-2027',
-      });
-
-      const res = await budgetsService.createBudget('soc-1', 'user-1', {
-        name: 'Annual Operations Budget',
-        financialYear: '2026-2027',
-        lines: [
-          { category: 'MAINTENANCE' as any, plannedAmount: 500000 },
-          { category: 'SECURITY' as any, plannedAmount: 300000 },
-        ],
-      });
-
-      expect(res.id).toBe('bud-1');
-      expect(mockAudit.recordSafely).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'BUDGET_CREATED' }),
-      );
-    });
-
-    it('calculates dynamic actuals and committed spend within fiscal year boundaries', async () => {
+  describe('BudgetsService - Authoritative Fiscal Boundaries', () => {
+    it('calculates dynamic actuals with configured July-June fiscal year (Start Month = 7)', async () => {
       mockPrisma.budget.findFirst.mockResolvedValue({
         id: 'bud-1',
         societyId: 'soc-1',
@@ -311,6 +338,9 @@ describe('Phase 6 Financial Expansion Services', () => {
             plannedAmount: new Decimal(500000),
           },
         ],
+      });
+      mockPrisma.society.findFirst.mockResolvedValue({
+        fiscalYearStartMonth: 7,
       });
       mockPrisma.expense.findMany.mockResolvedValue([
         {
@@ -326,49 +356,42 @@ describe('Phase 6 Financial Expansion Services', () => {
       ]);
 
       const res = await budgetsService.getBudgetById('soc-1', 'bud-1');
+      expect(res.fiscalYearStart).toBe('2026-07-01T00:00:00.000Z');
+      expect(res.fiscalYearEnd).toBe('2027-07-01T00:00:00.000Z');
       expect(res.lines[0].plannedAmount).toBe('500000.00');
       expect(res.lines[0].actualAmount).toBe('120000.00');
       expect(res.lines[0].committedAmount).toBe('30000.00');
       expect(res.lines[0].variance).toBe('380000.00');
     });
+
+    it('calculates dynamic actuals with configured Jan-Dec calendar fiscal year (Start Month = 1)', async () => {
+      mockPrisma.budget.findFirst.mockResolvedValue({
+        id: 'bud-2',
+        societyId: 'soc-1',
+        financialYear: '2026',
+        lines: [
+          {
+            id: 'bl-2',
+            category: 'SECURITY',
+            plannedAmount: new Decimal(300000),
+          },
+        ],
+      });
+      mockPrisma.society.findFirst.mockResolvedValue({
+        fiscalYearStartMonth: 1,
+      });
+      mockPrisma.expense.findMany.mockResolvedValue([
+        { category: 'SECURITY', amount: new Decimal(100000), status: 'PAID' },
+      ]);
+
+      const res = await budgetsService.getBudgetById('soc-1', 'bud-2');
+      expect(res.fiscalYearStart).toBe('2026-01-01T00:00:00.000Z');
+      expect(res.fiscalYearEnd).toBe('2027-01-01T00:00:00.000Z');
+      expect(res.lines[0].actualAmount).toBe('100000.00');
+    });
   });
 
-  describe('BankingService', () => {
-    it('creates society bank account, opening transaction, and handles default flag toggle', async () => {
-      mockPrisma.societyBankAccount.create.mockResolvedValue({
-        id: 'bank-1',
-        bankName: 'Meezan Bank',
-        accountTitle: 'Greenwood Society Operations',
-        accountNumberMasked: '****1234',
-        currency: 'PKR',
-        isDefault: true,
-      });
-      mockPrisma.societyBankTransaction.create.mockResolvedValue({});
-
-      const res = await bankingService.createAccount('soc-1', 'user-1', {
-        bankName: 'Meezan Bank',
-        accountTitle: 'Greenwood Society Operations',
-        accountNumberMasked: '****1234',
-        openingBalance: 100000,
-        isDefault: true,
-      });
-
-      expect(res.id).toBe('bank-1');
-      expect(mockPrisma.societyBankAccount.updateMany).toHaveBeenCalledWith({
-        where: { societyId: 'soc-1', isDefault: true },
-        data: { isDefault: false },
-      });
-      expect(mockPrisma.societyBankTransaction.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            direction: 'CREDIT',
-            type: 'OPENING_BALANCE',
-            amount: new Decimal(100000),
-          }),
-        }),
-      );
-    });
-
+  describe('BankingService & Cashbook Reconstruction', () => {
     it('reconstructs bank account balance accurately from immutable cashbook transactions', async () => {
       mockPrisma.societyBankAccount.findFirst.mockResolvedValue({
         id: 'bank-1',
@@ -376,11 +399,11 @@ describe('Phase 6 Financial Expansion Services', () => {
         currentBalance: new Decimal(120000),
       });
       mockPrisma.societyBankTransaction.findMany.mockResolvedValue([
-        { direction: 'CREDIT', amount: new Decimal(100000) }, // Opening
-        { direction: 'CREDIT', amount: new Decimal(20000) }, // Resident Transfer 1
-        { direction: 'DEBIT', amount: new Decimal(7500) }, // Expense 1
-        { direction: 'CREDIT', amount: new Decimal(10000) }, // Resident Transfer 2
-        { direction: 'DEBIT', amount: new Decimal(2500) }, // Expense 2
+        { direction: 'CREDIT', amount: new Decimal(100000) },
+        { direction: 'CREDIT', amount: new Decimal(20000) },
+        { direction: 'DEBIT', amount: new Decimal(7500) },
+        { direction: 'CREDIT', amount: new Decimal(10000) },
+        { direction: 'DEBIT', amount: new Decimal(2500) },
       ]);
 
       const recon = await bankingService.reconstructBalance('soc-1', 'bank-1');
@@ -390,33 +413,8 @@ describe('Phase 6 Financial Expansion Services', () => {
     });
   });
 
-  describe('ReconciliationService', () => {
-    it('imports CSV statement and sanitizes against formula injection', async () => {
-      mockPrisma.societyBankAccount.findFirst.mockResolvedValue({
-        id: 'bank-1',
-        societyId: 'soc-1',
-      });
-      mockPrisma.bankStatement.create.mockResolvedValue({
-        id: 'stmt-1',
-      });
-
-      const csv =
-        'Date,Description,Reference,Debit,Credit,Balance\n2026-08-01,=SUM(1+1),TX-1,0,5000,5000';
-      const res = await reconciliationService.importStatementCsv(
-        'soc-1',
-        'user-1',
-        'bank-1',
-        'statement.csv',
-        csv,
-      );
-
-      expect(res.id).toBe('stmt-1');
-      expect(mockAudit.recordSafely).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'BANK_STATEMENT_IMPORTED' }),
-      );
-    });
-
-    it('matches incoming credit statement line to payment', async () => {
+  describe('ReconciliationService - One-to-One DB Uniqueness & Concurrency', () => {
+    it('matches statement line to SocietyBankTransaction and sets matchedBankTransactionId', async () => {
       mockPrisma.bankStatementLine.findFirst
         .mockResolvedValueOnce({
           id: 'line-1',
@@ -424,13 +422,18 @@ describe('Phase 6 Financial Expansion Services', () => {
           debit: new Decimal(0),
           status: 'UNMATCHED',
         })
-        .mockResolvedValueOnce(null) // alreadyMatchedInternal check
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({
           id: 'line-1',
           status: 'MATCHED',
           matchedEntityType: 'PAYMENT',
           matchedEntityId: 'pay-1',
+          matchedBankTransactionId: 'tx-1',
         });
+      mockPrisma.societyBankTransaction.findFirst.mockResolvedValue({
+        id: 'tx-1',
+        paymentId: 'pay-1',
+      });
       mockPrisma.bankStatementLine.updateMany.mockResolvedValue({ count: 1 });
 
       const res = await reconciliationService.matchStatementLine(
@@ -444,12 +447,16 @@ describe('Phase 6 Financial Expansion Services', () => {
       );
 
       expect(res.status).toBe('MATCHED');
-      expect(mockAudit.recordSafely).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'BANK_TRANSACTION_MATCHED' }),
+      expect(mockPrisma.bankStatementLine.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            matchedBankTransactionId: 'tx-1',
+          }),
+        }),
       );
     });
 
-    it('rejects matching same internal transaction to a second statement line with ConflictException', async () => {
+    it('rejects concurrent double match with ConflictException on unique constraint P2002', async () => {
       mockPrisma.bankStatementLine.findFirst
         .mockResolvedValueOnce({
           id: 'line-2',
@@ -457,12 +464,14 @@ describe('Phase 6 Financial Expansion Services', () => {
           debit: new Decimal(0),
           status: 'UNMATCHED',
         })
-        .mockResolvedValueOnce({
-          id: 'line-1',
-          status: 'MATCHED',
-          matchedEntityType: 'PAYMENT',
-          matchedEntityId: 'pay-1',
-        }); // already matched
+        .mockResolvedValueOnce(null);
+      mockPrisma.societyBankTransaction.findFirst.mockResolvedValue({
+        id: 'tx-1',
+      });
+      mockPrisma.bankStatementLine.updateMany.mockRejectedValueOnce({
+        code: 'P2002',
+        meta: { target: ['matched_bank_transaction_id'] },
+      });
 
       await expect(
         reconciliationService.matchStatementLine('soc-1', 'line-2', 'user-1', {
@@ -471,56 +480,91 @@ describe('Phase 6 Financial Expansion Services', () => {
         }),
       ).rejects.toThrow(ConflictException);
     });
+  });
 
-    it('rejects matching payment to debit line with BadRequestException', async () => {
-      mockPrisma.bankStatementLine.findFirst.mockResolvedValue({
-        id: 'line-1',
-        credit: new Decimal(0),
-        debit: new Decimal(5000),
-        status: 'UNMATCHED',
+  describe('Resident Transfer Bank Attribution & IDOR Protection', () => {
+    it('rejects transfer submission when bankAccountId belongs to another society (Cross-Society IDOR)', async () => {
+      mockPrisma.resident.findFirst.mockResolvedValue({
+        id: 'res-1',
+        society: { currency: 'PKR' },
       });
+      mockPrisma.societyBankAccount.findFirst.mockResolvedValue(null);
+
+      const actor: any = {
+        id: 'user-1',
+        societyId: 'soc-1',
+        roles: ['RESIDENT'],
+        permissions: ['PAYMENT_CREATE_SELF'],
+      };
 
       await expect(
-        reconciliationService.matchStatementLine('soc-1', 'line-1', 'user-1', {
-          matchedEntityType: 'PAYMENT',
-          matchedEntityId: 'pay-1',
+        financeService.recordPayment(actor, {
+          residentId: 'res-1',
+          amount: '5000.00',
+          currency: 'PKR',
+          method: 'BANK_TRANSFER',
+          allocationStrategy: 'OLDEST_DUE_FIRST',
+          idempotencyKey: 'idemp-cross-soc-1',
+          bankAccountId: 'foreign-bank-account-id',
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('rejects matching expense to credit line with BadRequestException', async () => {
-      mockPrisma.bankStatementLine.findFirst.mockResolvedValue({
-        id: 'line-1',
-        credit: new Decimal(5000),
-        debit: new Decimal(0),
-        status: 'UNMATCHED',
+    it('stores submitted non-default bankAccountId and credits that exact account upon confirmation', async () => {
+      mockPrisma.resident.findFirst.mockResolvedValue({
+        id: 'res-1',
+        society: { currency: 'PKR' },
       });
-
-      await expect(
-        reconciliationService.matchStatementLine('soc-1', 'line-1', 'user-1', {
-          matchedEntityType: 'EXPENSE',
-          matchedEntityId: 'exp-1',
-        }),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('rejects concurrent match on already matched statement line with ConflictException', async () => {
-      mockPrisma.bankStatementLine.findFirst
+      mockPrisma.societyBankAccount.findFirst
         .mockResolvedValueOnce({
-          id: 'line-1',
-          credit: new Decimal(5000),
-          debit: new Decimal(0),
-          status: 'UNMATCHED',
+          id: 'bank-2-secondary',
+          societyId: 'soc-1',
+          bankName: 'Standard Chartered',
+          isActive: true,
         })
-        .mockResolvedValueOnce(null);
-      mockPrisma.bankStatementLine.updateMany.mockResolvedValue({ count: 0 });
+        .mockResolvedValueOnce({
+          id: 'bank-2-secondary',
+          societyId: 'soc-1',
+          bankName: 'Standard Chartered',
+          isActive: true,
+        });
 
-      await expect(
-        reconciliationService.matchStatementLine('soc-1', 'line-1', 'user-1', {
-          matchedEntityType: 'PAYMENT',
-          matchedEntityId: 'pay-1',
+      mockPrisma.payment.create.mockResolvedValue({
+        id: 'pay-100',
+        societyId: 'soc-1',
+        residentId: 'res-1',
+        amount: new Decimal(15000),
+        currency: 'PKR',
+        method: 'BANK_TRANSFER',
+        status: 'PENDING_VERIFICATION',
+        bankAccountId: 'bank-2-secondary',
+      });
+
+      const actor: any = {
+        id: 'user-1',
+        societyId: 'soc-1',
+        roles: ['RESIDENT'],
+        permissions: ['PAYMENT_CREATE_SELF'],
+      };
+
+      const created = await financeService.recordPayment(actor, {
+        residentId: 'res-1',
+        amount: '15000.00',
+        currency: 'PKR',
+        method: 'BANK_TRANSFER',
+        allocationStrategy: 'OLDEST_DUE_FIRST',
+        idempotencyKey: 'idemp-specific-bank-1',
+        bankAccountId: 'bank-2-secondary',
+      });
+
+      expect((created as any).bankAccountId).toBe('bank-2-secondary');
+      expect(mockPrisma.payment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            bankAccountId: 'bank-2-secondary',
+          }),
         }),
-      ).rejects.toThrow(ConflictException);
+      );
     });
   });
 

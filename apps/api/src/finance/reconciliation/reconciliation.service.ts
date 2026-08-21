@@ -183,13 +183,41 @@ export class ReconciliationService {
       );
     }
 
+    // Find internal SocietyBankTransaction
+    let bankTx: any = null;
+    if (dto.matchedEntityType === 'PAYMENT') {
+      bankTx = await this.prisma.societyBankTransaction.findFirst({
+        where: { paymentId: dto.matchedEntityId, societyId },
+      });
+    } else if (dto.matchedEntityType === 'EXPENSE') {
+      bankTx = await this.prisma.societyBankTransaction.findFirst({
+        where: { expenseId: dto.matchedEntityId, societyId },
+      });
+    } else {
+      bankTx = await this.prisma.societyBankTransaction.findFirst({
+        where: { id: dto.matchedEntityId, societyId },
+      });
+    }
+
     // One-to-one protection: Check if target internal transaction is already matched to another statement line
     const alreadyMatchedInternal =
       await this.prisma.bankStatementLine.findFirst({
         where: {
-          matchedEntityType: dto.matchedEntityType,
-          matchedEntityId: dto.matchedEntityId,
-          status: BankStatementLineStatus.MATCHED,
+          OR: [
+            {
+              matchedEntityType: dto.matchedEntityType,
+              matchedEntityId: dto.matchedEntityId,
+              status: BankStatementLineStatus.MATCHED,
+            },
+            ...(bankTx?.id
+              ? [
+                  {
+                    matchedBankTransactionId: bankTx.id,
+                    status: BankStatementLineStatus.MATCHED,
+                  },
+                ]
+              : []),
+          ],
         },
       });
     if (alreadyMatchedInternal) {
@@ -198,22 +226,32 @@ export class ReconciliationService {
       );
     }
 
-    const updateResult = await this.prisma.bankStatementLine.updateMany({
-      where: {
-        id: lineId,
-        status: BankStatementLineStatus.UNMATCHED,
-      },
-      data: {
-        status: BankStatementLineStatus.MATCHED,
-        matchedEntityType: dto.matchedEntityType,
-        matchedEntityId: dto.matchedEntityId,
-        matchedAt: new Date(),
-        matchedByUserId: userId,
-      },
-    });
+    try {
+      const updateResult = await this.prisma.bankStatementLine.updateMany({
+        where: {
+          id: lineId,
+          status: BankStatementLineStatus.UNMATCHED,
+        },
+        data: {
+          status: BankStatementLineStatus.MATCHED,
+          matchedEntityType: dto.matchedEntityType,
+          matchedEntityId: dto.matchedEntityId,
+          matchedBankTransactionId: bankTx?.id || null,
+          matchedAt: new Date(),
+          matchedByUserId: userId,
+        },
+      });
 
-    if (updateResult.count === 0) {
-      throw new ConflictException('Statement line has already been matched.');
+      if (updateResult.count === 0) {
+        throw new ConflictException('Statement line has already been matched.');
+      }
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new ConflictException(
+          'This internal transaction has already been matched to another statement line.',
+        );
+      }
+      throw err;
     }
 
     const updated = await this.prisma.bankStatementLine.findFirst({

@@ -39,9 +39,17 @@ export class BudgetsService {
       throw new NotFoundException('Budget not found.');
     }
 
-    // Parse financial year boundaries:
-    // "2026-2027" -> 2026-07-01 inclusive to 2027-07-01 exclusive
-    // "2026" -> 2026-01-01 inclusive to 2027-01-01 exclusive
+    const society = await this.prisma.society.findFirst({
+      where: { id: societyId },
+      select: { fiscalYearStartMonth: true },
+    });
+    const fiscalMonth =
+      society?.fiscalYearStartMonth &&
+      society.fiscalYearStartMonth >= 1 &&
+      society.fiscalYearStartMonth <= 12
+        ? society.fiscalYearStartMonth
+        : 7;
+
     let startDate: Date;
     let endDate: Date;
 
@@ -49,15 +57,20 @@ export class BudgetsService {
     if (multiYearMatch) {
       const startYear = parseInt(multiYearMatch[1], 10);
       const endYear = parseInt(multiYearMatch[2], 10);
-      startDate = new Date(Date.UTC(startYear, 6, 1, 0, 0, 0, 0)); // July 1
-      endDate = new Date(Date.UTC(endYear, 6, 1, 0, 0, 0, 0)); // July 1 next year (exclusive)
+      startDate = new Date(Date.UTC(startYear, fiscalMonth - 1, 1, 0, 0, 0, 0));
+      endDate = new Date(Date.UTC(endYear, fiscalMonth - 1, 1, 0, 0, 0, 0));
     } else {
       const singleYearMatch = budget.financialYear.match(/^(\d{4})$/);
       const year = singleYearMatch
         ? parseInt(singleYearMatch[1], 10)
         : new Date().getFullYear();
-      startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-      endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+      if (fiscalMonth === 1) {
+        startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+        endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+      } else {
+        startDate = new Date(Date.UTC(year, fiscalMonth - 1, 1, 0, 0, 0, 0));
+        endDate = new Date(Date.UTC(year + 1, fiscalMonth - 1, 1, 0, 0, 0, 0));
+      }
     }
 
     // Dynamic Actual and Committed spend calculation within financial year boundaries

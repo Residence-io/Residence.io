@@ -470,6 +470,35 @@ export class FinanceService {
       dto.method === 'DIGITAL_WALLET'
         ? 'PENDING_VERIFICATION'
         : 'CONFIRMED';
+
+    let targetBankAccountId: string | undefined = undefined;
+    if (
+      dto.method === 'BANK_TRANSFER' ||
+      ('bankAccountId' in dto && dto.bankAccountId)
+    ) {
+      if ('bankAccountId' in dto && dto.bankAccountId) {
+        const acc = await this.prisma.societyBankAccount.findFirst({
+          where: {
+            id: dto.bankAccountId,
+            societyId: actor.societyId,
+            isActive: true,
+          },
+        });
+        if (!acc) {
+          throw new BadRequestException(
+            'Invalid bank account for this society.',
+          );
+        }
+        targetBankAccountId = acc.id;
+      } else {
+        const defaultAcc = await this.prisma.societyBankAccount.findFirst({
+          where: { societyId: actor.societyId, isActive: true },
+          orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+        });
+        if (defaultAcc) targetBankAccountId = defaultAcc.id;
+      }
+    }
+
     const payment = await this.prisma.payment.create({
       data: {
         societyId: actor.societyId,
@@ -491,6 +520,7 @@ export class FinanceService {
           : undefined,
         notes: 'notes' in dto ? dto.notes : undefined,
         recordedByUserId: actor.id,
+        bankAccountId: targetBankAccountId,
       },
     });
     await this.audit(actor, 'PAYMENT_RECORDED', 'Payment', payment.id, {
@@ -1468,16 +1498,24 @@ export class FinanceService {
           },
         });
 
-        const activeBankAccount = await tx.societyBankAccount.findFirst({
-          where: { societyId: actor.societyId, isActive: true },
-          orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
-        });
+        let targetBankAccount: any = null;
+        if (payment.bankAccountId) {
+          targetBankAccount = await tx.societyBankAccount.findFirst({
+            where: { id: payment.bankAccountId, societyId: actor.societyId },
+          });
+        }
+        if (!targetBankAccount) {
+          targetBankAccount = await tx.societyBankAccount.findFirst({
+            where: { societyId: actor.societyId, isActive: true },
+            orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+          });
+        }
 
-        if (activeBankAccount) {
+        if (targetBankAccount) {
           await tx.societyBankTransaction.create({
             data: {
               societyId: actor.societyId,
-              bankAccountId: activeBankAccount.id,
+              bankAccountId: targetBankAccount.id,
               direction: 'CREDIT',
               type: 'RESIDENT_PAYMENT',
               amount: payment.amount,
@@ -1489,7 +1527,7 @@ export class FinanceService {
             },
           });
           await tx.societyBankAccount.update({
-            where: { id: activeBankAccount.id },
+            where: { id: targetBankAccount.id },
             data: {
               currentBalance: { increment: payment.amount },
             },

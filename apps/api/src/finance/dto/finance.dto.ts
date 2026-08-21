@@ -83,6 +83,7 @@ export class PaymentDto {
   @IsString() @Length(8, 180) idempotencyKey!: string;
   @IsOptional() @IsString() @MaxLength(500) notes?: string;
   @IsOptional() @IsDateString() paymentDate?: string;
+  @IsOptional() @IsUUID() bankAccountId?: string;
 }
 export class ResidentPaymentDto {
   @Matches(moneyPattern) amount!: string;
@@ -102,6 +103,7 @@ export class ResidentPaymentDto {
   @IsUUID('4', { each: true })
   selectedDueIds?: string[];
   @IsString() @Length(8, 180) idempotencyKey!: string;
+  @IsOptional() @IsUUID() bankAccountId?: string;
 }
 export class DecisionDto {
   @IsString() @Length(3, 500) reason!: string;
