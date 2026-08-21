@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { FinanceService } from '../finance/finance.service';
 import {
   CreateMoveInRequestDto,
   ReviewMoveInRequestDto,
@@ -24,18 +26,19 @@ export class MoveInOutService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly financeService: FinanceService,
   ) {}
 
   private generateMoveInNumber(): string {
     const year = new Date().getFullYear();
-    const rand = randomBytes(4).toString('hex').toUpperCase();
-    return `MOV-IN-${year}-${rand}`;
+    const rand = randomBytes(5).toString('hex').toUpperCase();
+    return 'MOV-IN-' + year + '-' + rand;
   }
 
   private generateMoveOutNumber(): string {
     const year = new Date().getFullYear();
-    const rand = randomBytes(4).toString('hex').toUpperCase();
-    return `MOV-OUT-${year}-${rand}`;
+    const rand = randomBytes(5).toString('hex').toUpperCase();
+    return 'MOV-OUT-' + year + '-' + rand;
   }
 
   // ==================== MOVE-IN ====================
@@ -71,22 +74,47 @@ export class MoveInOutService {
       throw new NotFoundException('Unit not found in specified property.');
     }
 
-    const requestNumber = this.generateMoveInNumber();
+    let attempts = 0;
+    const maxAttempts = 3;
+    let request = null;
 
-    const request = await this.prisma.moveInRequest.create({
-      data: {
-        societyId,
-        residentId,
-        propertyId: dto.propertyId,
-        unitId: dto.unitId,
-        requestNumber,
-        occupancyType: dto.occupancyType,
-        desiredMoveInDate: new Date(dto.desiredMoveInDate),
-        notes: dto.notes || null,
-        metadata: (dto.metadata as Prisma.InputJsonValue) || Prisma.DbNull,
-        status: MoveInRequestStatus.SUBMITTED,
-      },
-    });
+    while (attempts < maxAttempts) {
+      try {
+        const requestNumber = this.generateMoveInNumber();
+        request = await this.prisma.moveInRequest.create({
+          data: {
+            societyId,
+            residentId,
+            propertyId: dto.propertyId,
+            unitId: dto.unitId,
+            requestNumber,
+            occupancyType: dto.occupancyType,
+            desiredMoveInDate: new Date(dto.desiredMoveInDate),
+            notes: dto.notes || null,
+            metadata: (dto.metadata as Prisma.InputJsonValue) || Prisma.DbNull,
+            status: MoveInRequestStatus.SUBMITTED,
+          },
+        });
+        break;
+      } catch (err: any) {
+        if (
+          err?.code === 'P2002' &&
+          (err?.meta?.target?.includes('request_number') ||
+            err?.meta?.target?.includes('requestNumber'))
+        ) {
+          attempts++;
+          if (attempts >= maxAttempts) throw err;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!request) {
+      throw new BadRequestException(
+        'Could not generate a unique request number. Please try again.',
+      );
+    }
 
     await this.audit.recordSafely({
       societyId,
@@ -95,7 +123,10 @@ export class MoveInOutService {
       targetType: 'MoveInRequest',
       targetId: request.id,
       outcome: 'SUCCESS',
-      safeMetadata: { requestNumber, occupancyType: dto.occupancyType },
+      safeMetadata: {
+        requestNumber: request.requestNumber,
+        occupancyType: dto.occupancyType,
+      },
     });
 
     await this.audit.recordSafely({
@@ -105,7 +136,7 @@ export class MoveInOutService {
       targetType: 'MoveInRequest',
       targetId: request.id,
       outcome: 'SUCCESS',
-      safeMetadata: { requestNumber },
+      safeMetadata: { requestNumber: request.requestNumber },
     });
 
     return request;
@@ -194,56 +225,69 @@ export class MoveInOutService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const existingActiveOccupancy = await tx.residentOccupancy.findFirst({
-        where: {
-          unitId: request.unitId,
-          endDate: null,
-          primaryResident: true,
-        },
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existingActiveOccupancy = await tx.residentOccupancy.findFirst({
+          where: {
+            unitId: request.unitId,
+            endDate: null,
+            primaryResident: true,
+          },
+        });
+        if (
+          existingActiveOccupancy &&
+          existingActiveOccupancy.residentId !== request.residentId
+        ) {
+          throw new ConflictException(
+            'This unit already has an active primary occupant.',
+          );
+        }
+
+        await tx.residentOccupancy.create({
+          data: {
+            residentId: request.residentId,
+            unitId: request.unitId,
+            occupancyType: request.occupancyType,
+            startDate: request.desiredMoveInDate,
+            endDate: null,
+            primaryResident: true,
+          },
+        });
+
+        await tx.resident.update({
+          where: { id: request.residentId },
+          data: { status: 'ACTIVE' },
+        });
+
+        const updated = await tx.moveInRequest.update({
+          where: { id },
+          data: { status: MoveInRequestStatus.COMPLETED },
+        });
+
+        await this.audit.recordSafely({
+          societyId,
+          actorUserId: reviewerUserId,
+          action: 'MOVE_IN_COMPLETED',
+          targetType: 'MoveInRequest',
+          targetId: request.id,
+          outcome: 'SUCCESS',
+          safeMetadata: { requestNumber: request.requestNumber },
+        });
+
+        return updated;
       });
+    } catch (err: any) {
       if (
-        existingActiveOccupancy &&
-        existingActiveOccupancy.residentId !== request.residentId
+        err?.code === 'P2002' ||
+        err?.message?.includes('uk_resident_occupancy_unit_active_primary') ||
+        err?.message?.includes('one_active_primary_occupancy_per_unit')
       ) {
-        throw new BadRequestException(
-          'Cannot complete move-in: Unit already has an active primary occupant.',
+        throw new ConflictException(
+          'This unit already has an active primary occupant.',
         );
       }
-
-      await tx.residentOccupancy.create({
-        data: {
-          residentId: request.residentId,
-          unitId: request.unitId,
-          occupancyType: request.occupancyType,
-          startDate: request.desiredMoveInDate,
-          endDate: null,
-          primaryResident: true,
-        },
-      });
-
-      await tx.resident.update({
-        where: { id: request.residentId },
-        data: { status: 'ACTIVE' },
-      });
-
-      const updated = await tx.moveInRequest.update({
-        where: { id },
-        data: { status: MoveInRequestStatus.COMPLETED },
-      });
-
-      await this.audit.recordSafely({
-        societyId,
-        actorUserId: reviewerUserId,
-        action: 'MOVE_IN_COMPLETED',
-        targetType: 'MoveInRequest',
-        targetId: request.id,
-        outcome: 'SUCCESS',
-        safeMetadata: { requestNumber: request.requestNumber },
-      });
-
-      return updated;
-    });
+      throw err;
+    }
   }
 
   // ==================== MOVE-OUT ====================
@@ -279,20 +323,45 @@ export class MoveInOutService {
       );
     }
 
-    const requestNumber = this.generateMoveOutNumber();
+    let attempts = 0;
+    const maxAttempts = 3;
+    let request = null;
 
-    const request = await this.prisma.moveOutRequest.create({
-      data: {
-        societyId,
-        residentId,
-        propertyId: dto.propertyId,
-        unitId: dto.unitId,
-        requestNumber,
-        desiredMoveOutDate: new Date(dto.desiredMoveOutDate),
-        notes: dto.notes || null,
-        status: MoveOutRequestStatus.SUBMITTED,
-      },
-    });
+    while (attempts < maxAttempts) {
+      try {
+        const requestNumber = this.generateMoveOutNumber();
+        request = await this.prisma.moveOutRequest.create({
+          data: {
+            societyId,
+            residentId,
+            propertyId: dto.propertyId,
+            unitId: dto.unitId,
+            requestNumber,
+            desiredMoveOutDate: new Date(dto.desiredMoveOutDate),
+            notes: dto.notes || null,
+            status: MoveOutRequestStatus.SUBMITTED,
+          },
+        });
+        break;
+      } catch (err: any) {
+        if (
+          err?.code === 'P2002' &&
+          (err?.meta?.target?.includes('request_number') ||
+            err?.meta?.target?.includes('requestNumber'))
+        ) {
+          attempts++;
+          if (attempts >= maxAttempts) throw err;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!request) {
+      throw new BadRequestException(
+        'Could not generate a unique request number. Please try again.',
+      );
+    }
 
     await this.audit.recordSafely({
       societyId,
@@ -301,7 +370,7 @@ export class MoveInOutService {
       targetType: 'MoveOutRequest',
       targetId: request.id,
       outcome: 'SUCCESS',
-      safeMetadata: { requestNumber },
+      safeMetadata: { requestNumber: request.requestNumber },
     });
 
     await this.audit.recordSafely({
@@ -311,7 +380,7 @@ export class MoveInOutService {
       targetType: 'MoveOutRequest',
       targetId: request.id,
       outcome: 'SUCCESS',
-      safeMetadata: { requestNumber },
+      safeMetadata: { requestNumber: request.requestNumber },
     });
 
     return request;
@@ -440,17 +509,18 @@ export class MoveInOutService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // Recheck authoritative financial dues balance before finalizing move-out
-      const pendingDues = await tx.monthlyDue.findMany({
-        where: {
+      // Recheck authoritative financial balance from canonical Finance domain
+      const balanceCheck =
+        await this.financeService.getResidentOutstandingBalance(
           societyId,
-          residentId: request.residentId,
-          status: { in: ['PENDING', 'PARTIALLY_PAID', 'OVERDUE'] },
-        },
-      });
-      if (pendingDues.length > 0 && request.duesClearanceStatus !== 'WAIVED') {
+          request.residentId,
+          tx,
+        );
+      if (!balanceCheck.isCleared && request.duesClearanceStatus !== 'WAIVED') {
         throw new BadRequestException(
-          'Cannot complete move-out: Resident has outstanding unpaid maintenance dues.',
+          'Cannot complete move-out: Resident has outstanding unpaid ledger balance of ' +
+            balanceCheck.balance +
+            '.',
         );
       }
 

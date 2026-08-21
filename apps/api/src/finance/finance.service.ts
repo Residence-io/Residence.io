@@ -910,6 +910,41 @@ export class FinanceService {
       advanceCredit: credit?.amount.toFixed(2) ?? '0.00',
     };
   }
+
+  async getResidentOutstandingBalance(
+    societyId: string,
+    residentId: string,
+    client: any = this.prisma,
+  ): Promise<{ balance: string; advanceCredit: string; isCleared: boolean }> {
+    const where = { societyId, residentId };
+    const [aggregate, credit] = await Promise.all([
+      client.financialLedgerEntry.groupBy({
+        by: ['direction'],
+        where,
+        _sum: { amount: true },
+      }),
+      client.residentCreditBalance.findUnique({
+        where: { residentId },
+      }),
+    ]);
+    const aggregateRows = aggregate ?? [];
+    const debit =
+      aggregateRows.find((x: any) => x.direction === 'DEBIT')?._sum?.amount ??
+      money(0);
+    const credits =
+      aggregateRows.find((x: any) => x.direction === 'CREDIT')?._sum?.amount ??
+      money(0);
+    const netBalance = money(debit.sub(credits));
+    const advanceCreditAmount = credit?.amount ?? money(0);
+    const effectiveBalance = netBalance.sub(advanceCreditAmount);
+
+    return {
+      balance: netBalance.toFixed(2),
+      advanceCredit: advanceCreditAmount.toFixed(2),
+      isCleared: effectiveBalance.lte(0),
+    };
+  }
+
   async payment(actor: RequestUser, id: string) {
     const payment = await this.ownedPayment(actor, id);
     return this.prisma.payment.findUnique({

@@ -26,7 +26,7 @@ export class ResidentRequestsService {
 
   private generateRequestNumber(): string {
     const year = new Date().getFullYear();
-    const rand = randomBytes(4).toString('hex').toUpperCase();
+    const rand = randomBytes(5).toString('hex').toUpperCase();
     return `REQ-${year}-${rand}`;
   }
 
@@ -72,25 +72,50 @@ export class ResidentRequestsService {
       throw new NotFoundException('Resident profile not found.');
     }
 
-    const requestNumber = this.generateRequestNumber();
+    let attempts = 0;
+    const maxAttempts = 3;
+    let request: any = null;
 
-    const request = await this.prisma.residentRequest.create({
-      data: {
-        societyId,
-        residentId,
-        propertyId: dto.propertyId || null,
-        unitId: dto.unitId || null,
-        requestNumber,
-        requestType: dto.requestType,
-        title: dto.title,
-        description: dto.description || null,
-        status: ResidentRequestStatus.SUBMITTED,
-        metadata: (dto.metadata as Prisma.InputJsonValue) || Prisma.DbNull,
-      },
-      include: {
-        resident: { select: { fullName: true, residentNumber: true } },
-      },
-    });
+    while (attempts < maxAttempts) {
+      try {
+        const requestNumber = this.generateRequestNumber();
+        request = await this.prisma.residentRequest.create({
+          data: {
+            societyId,
+            residentId,
+            propertyId: dto.propertyId || null,
+            unitId: dto.unitId || null,
+            requestNumber,
+            requestType: dto.requestType,
+            title: dto.title,
+            description: dto.description || null,
+            status: ResidentRequestStatus.SUBMITTED,
+            metadata: (dto.metadata as Prisma.InputJsonValue) || Prisma.DbNull,
+          },
+          include: {
+            resident: { select: { fullName: true, residentNumber: true } },
+          },
+        });
+        break;
+      } catch (err: any) {
+        if (
+          err?.code === 'P2002' &&
+          (err?.meta?.target?.includes('request_number') ||
+            err?.meta?.target?.includes('requestNumber'))
+        ) {
+          attempts++;
+          if (attempts >= maxAttempts) throw err;
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!request) {
+      throw new BadRequestException(
+        'Could not generate a unique request number. Please try again.',
+      );
+    }
 
     await this.audit.recordSafely({
       societyId,
@@ -100,7 +125,7 @@ export class ResidentRequestsService {
       targetId: request.id,
       outcome: 'SUCCESS',
       safeMetadata: {
-        requestNumber,
+        requestNumber: request.requestNumber,
         requestType: dto.requestType,
         title: dto.title,
       },
@@ -113,7 +138,7 @@ export class ResidentRequestsService {
       targetType: 'ResidentRequest',
       targetId: request.id,
       outcome: 'SUCCESS',
-      safeMetadata: { requestNumber },
+      safeMetadata: { requestNumber: request.requestNumber },
     });
 
     return request;

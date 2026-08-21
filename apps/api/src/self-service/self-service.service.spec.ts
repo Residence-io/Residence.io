@@ -6,7 +6,12 @@ import { CommunityService } from './community.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PrivateStorageService } from '../resident-storage/private-storage.service';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { FinanceService } from '../finance/finance.service';
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 
 describe('SelfServiceModule Services', () => {
   let docService: ResidentDocumentsService;
@@ -94,6 +99,14 @@ describe('SelfServiceModule Services', () => {
     }),
   };
 
+  const mockFinance = {
+    getResidentOutstandingBalance: jest.fn().mockResolvedValue({
+      balance: '0.00',
+      advanceCredit: '0.00',
+      isCleared: true,
+    }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -104,6 +117,7 @@ describe('SelfServiceModule Services', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditService, useValue: mockAudit },
         { provide: PrivateStorageService, useValue: mockStorage },
+        { provide: FinanceService, useValue: mockFinance },
       ],
     }).compile();
 
@@ -177,7 +191,7 @@ describe('SelfServiceModule Services', () => {
       });
       mockPrisma.residentRequest.create.mockResolvedValue({
         id: 'req-1',
-        requestNumber: 'REQ-2026-ABCD',
+        requestNumber: 'REQ-2026-ABCD123456',
         title: 'Need NOC',
         status: 'SUBMITTED',
       });
@@ -194,6 +208,31 @@ describe('SelfServiceModule Services', () => {
       expect(mockAudit.recordSafely).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'REQUEST_SUBMITTED' }),
       );
+    });
+
+    it('retries request creation on unique reference collision', async () => {
+      mockPrisma.resident.findFirst.mockResolvedValue({
+        id: 'res-1',
+        societyId: 'soc-1',
+      });
+      mockPrisma.residentRequest.create
+        .mockRejectedValueOnce({
+          code: 'P2002',
+          meta: { target: ['request_number'] },
+        })
+        .mockResolvedValueOnce({
+          id: 'req-2',
+          requestNumber: 'REQ-2026-RETRY1234',
+          status: 'SUBMITTED',
+        });
+
+      const res = await reqService.createRequest('soc-1', 'res-1', 'user-1', {
+        requestType: 'RESIDENCE_CERTIFICATE' as any,
+        title: 'Need NOC',
+      });
+
+      expect(res.id).toBe('req-2');
+      expect(mockPrisma.residentRequest.create).toHaveBeenCalledTimes(2);
     });
 
     it('enforces resident ownership when fetching request by ID', async () => {
@@ -233,7 +272,7 @@ describe('SelfServiceModule Services', () => {
       mockPrisma.unit.findFirst.mockResolvedValue({ id: 'unit-1' });
       mockPrisma.moveInRequest.create.mockResolvedValue({
         id: 'mov-1',
-        requestNumber: 'MOV-IN-2026-1234',
+        requestNumber: 'MOV-IN-2026-1234567890',
         status: 'SUBMITTED',
       });
 
@@ -280,7 +319,7 @@ describe('SelfServiceModule Services', () => {
       });
     });
 
-    it('rejects move-in completion if another active primary occupant exists', async () => {
+    it('rejects move-in completion with ConflictException if unit already has an active primary occupant', async () => {
       mockPrisma.moveInRequest.findFirst.mockResolvedValue({
         id: 'mov-1',
         societyId: 'soc-1',
@@ -298,10 +337,32 @@ describe('SelfServiceModule Services', () => {
 
       await expect(
         moveService.completeMoveIn('soc-1', 'mov-1', 'admin-1'),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
 
-    it('completes move-out and closes active occupancy & permits', async () => {
+    it('maps DB unique constraint error to ConflictException on concurrent move-in', async () => {
+      mockPrisma.moveInRequest.findFirst.mockResolvedValue({
+        id: 'mov-1',
+        societyId: 'soc-1',
+        residentId: 'res-1',
+        unitId: 'unit-1',
+        occupancyType: 'TENANT',
+        desiredMoveInDate: new Date('2026-09-01'),
+        status: 'APPROVED',
+      });
+      mockPrisma.residentOccupancy.findFirst.mockResolvedValue(null);
+      mockPrisma.residentOccupancy.create.mockRejectedValueOnce({
+        code: 'P2002',
+        message:
+          'Unique constraint failed on the fields: (unit_id) uk_resident_occupancy_unit_active_primary',
+      });
+
+      await expect(
+        moveService.completeMoveIn('soc-1', 'mov-1', 'admin-1'),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('completes move-out and closes active occupancy & permits using canonical Finance authority', async () => {
       mockPrisma.moveOutRequest.findFirst.mockResolvedValue({
         id: 'mout-1',
         societyId: 'soc-1',
@@ -310,7 +371,11 @@ describe('SelfServiceModule Services', () => {
         desiredMoveOutDate: new Date('2026-09-30'),
         status: 'APPROVED',
       });
-      mockPrisma.monthlyDue.findMany.mockResolvedValue([]);
+      mockFinance.getResidentOutstandingBalance.mockResolvedValue({
+        balance: '0.00',
+        advanceCredit: '0.00',
+        isCleared: true,
+      });
       mockPrisma.moveOutRequest.update.mockResolvedValue({
         id: 'mout-1',
         status: 'COMPLETED',
@@ -322,6 +387,7 @@ describe('SelfServiceModule Services', () => {
         'admin-1',
       );
       expect(res.status).toBe('COMPLETED');
+      expect(mockFinance.getResidentOutstandingBalance).toHaveBeenCalled();
       expect(mockPrisma.residentOccupancy.updateMany).toHaveBeenCalled();
       expect(mockPrisma.parkingPermit.updateMany).toHaveBeenCalled();
       expect(mockAudit.recordSafely).toHaveBeenCalledWith(
@@ -329,7 +395,7 @@ describe('SelfServiceModule Services', () => {
       );
     });
 
-    it('rejects move-out completion if resident has unpaid dues', async () => {
+    it('rejects move-out completion if resident has unpaid ledger balance from FinanceService', async () => {
       mockPrisma.moveOutRequest.findFirst.mockResolvedValue({
         id: 'mout-1',
         societyId: 'soc-1',
@@ -338,9 +404,11 @@ describe('SelfServiceModule Services', () => {
         duesClearanceStatus: 'PENDING',
         status: 'APPROVED',
       });
-      mockPrisma.monthlyDue.findMany.mockResolvedValue([
-        { id: 'due-1', status: 'PENDING' },
-      ]);
+      mockFinance.getResidentOutstandingBalance.mockResolvedValue({
+        balance: '450.00',
+        advanceCredit: '0.00',
+        isCleared: false,
+      });
 
       await expect(
         moveService.completeMoveOut('soc-1', 'mout-1', 'admin-1'),
