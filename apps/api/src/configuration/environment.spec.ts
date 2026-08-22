@@ -11,6 +11,17 @@ describe('validateEnvironment', () => {
     expect(env.API_PORT).toBe(3001);
   });
 
+  it('accepts dynamic PORT from container orchestrators', () => {
+    const env = validateEnvironment({
+      PORT: '8080',
+      DATABASE_URL: 'postgresql://user:pass@localhost:5432/residence',
+      SESSION_SECRET: 'a'.repeat(32),
+      IDENTITY_DATA_KEY: 'b'.repeat(32),
+      PAYMENT_PROVIDER_MODE: 'disabled',
+    });
+    expect(env.PORT).toBe(8080);
+  });
+
   it('rejects missing or invalid required values without echoing them', () => {
     expect(() =>
       validateEnvironment({

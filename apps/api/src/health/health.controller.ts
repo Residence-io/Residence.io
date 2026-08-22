@@ -13,6 +13,15 @@ export class HealthController {
     private readonly config: ConfigService,
   ) {}
 
+  @Get()
+  root() {
+    return {
+      status: 'ok',
+      service: 'residence-api',
+      version: this.config.getOrThrow<string>('app.version'),
+    };
+  }
+
   @Get('live')
   live() {
     return {

@@ -4,7 +4,7 @@ export function configuration(env: Environment) {
   return {
     app: {
       environment: env.NODE_ENV,
-      port: env.API_PORT,
+      port: env.PORT ?? env.API_PORT,
       version: env.APP_VERSION,
       webOrigin: env.WEB_ORIGIN,
       logLevel: env.LOG_LEVEL,
