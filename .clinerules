@@ -1,0 +1,15 @@
+# Residence.io Cline Agent Rules
+
+Read and strictly adhere to:
+- AGENTS.md (Root agent instruction set)
+- docs/CLINE_HANDOFF.md (Detailed domain and baseline documentation)
+
+## Highest-Priority Safety Constraints:
+1. Migrations 1–18 are production-applied and IMMUTABLE. Never modify them.
+2. All database changes must be new additive forward migrations.
+3. Never run 'prisma migrate deploy', 'prisma migrate dev', 'prisma migrate reset', or 'prisma db push' against production without explicit user approval.
+4. No direct browser business writes to Supabase. NestJS domain API is the sole authority for business logic.
+5. Multi-tenant society isolation is mandatory on every query and controller.
+6. Preserve the 39 suites / 141 tests baseline with zero failures.
+7. Money must always use Decimal-safe handling (no floating-point money math).
+8. Never commit secrets, .env files, or database backup SQL dumps.
