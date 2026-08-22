@@ -31,6 +31,9 @@ import { DeliveriesModule } from './deliveries/deliveries.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { FacilitiesModule } from './facilities/facilities.module';
 import { SelfServiceModule } from './self-service/self-service.module';
+import { AssetsModule } from './assets/assets.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { PollsModule } from './polls/polls.module';
 
 @Module({
   imports: [
@@ -69,6 +72,9 @@ import { SelfServiceModule } from './self-service/self-service.module';
     VehiclesModule,
     FacilitiesModule,
     SelfServiceModule,
+    AssetsModule,
+    InventoryModule,
+    PollsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

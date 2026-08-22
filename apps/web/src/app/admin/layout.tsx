@@ -42,6 +42,9 @@ export default async function AdminLayout({
   );
   const hasVisitors = perms.includes('VISITOR_ADMIN');
   const hasFacilities = perms.includes('FACILITY_VIEW');
+  const hasAssets = perms.includes('ASSET_VIEW');
+  const hasInventory = perms.includes('INVENTORY_VIEW');
+  const hasPolls = perms.includes('POLL_VIEW');
   const hasReports = perms.includes('REPORT_READ');
   const hasSettings = perms.includes('SOCIETY_SETTING_MANAGE');
 
@@ -80,6 +83,16 @@ export default async function AdminLayout({
           href: '/admin/facilities',
           available: hasFacilities,
         },
+        {
+          label: 'Assets',
+          href: '/admin/assets',
+          available: hasAssets,
+        },
+        {
+          label: 'Inventory',
+          href: '/admin/inventory',
+          available: hasInventory,
+        },
       ],
     },
     {
@@ -89,6 +102,11 @@ export default async function AdminLayout({
           label: 'Requests & NOCs',
           href: '/admin/requests',
           available: true,
+        },
+        {
+          label: 'Polls & Voting',
+          href: '/admin/community/polls',
+          available: hasPolls,
         },
         {
           label: 'Community Calendar',

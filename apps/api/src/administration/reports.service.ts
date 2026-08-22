@@ -38,6 +38,11 @@ export const REPORTS = [
   ['notification-delivery', 'Notification delivery summary'],
   ['notification-failures', 'Failed notification deliveries'],
   ['audit', 'Audit activity'],
+  ['assets-register', 'Asset register'],
+  ['inventory-status', 'Inventory stock status'],
+  ['inventory-movements', 'Inventory stock movements'],
+  ['poll-results', 'Poll voting results'],
+  ['executive-summary', 'Executive overview'],
 ] as const;
 export type ReportCode = (typeof REPORTS)[number][0];
 
@@ -998,6 +1003,25 @@ export class ReportsService {
       allowed = actor.permissions.includes('NOTIFICATION_LOG_READ');
     else if (code === 'audit')
       allowed = actor.permissions.includes('AUDIT_READ');
+    else if (
+      [
+        'assets-register',
+        'inventory-status',
+        'inventory-movements',
+        'poll-results',
+        'executive-summary',
+      ].includes(code)
+    )
+      allowed = actor.permissions.some((p) =>
+        [
+          'REPORT_READ',
+          'ADMIN_ACCESS',
+          'SUPER_ADMIN_ACCESS',
+          'ASSET_VIEW',
+          'INVENTORY_VIEW',
+          'POLL_VIEW',
+        ].includes(p),
+      );
     return allowed;
   }
 }

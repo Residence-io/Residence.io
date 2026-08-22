@@ -70,11 +70,18 @@ export default function ResidentCommunityPage() {
           title="Community Calendar & Noticeboard"
           description="Stay updated with society meetings, maintenance shutdowns, and events."
         />
-        <Link href="/resident/emergency" className="self-start sm:self-auto">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
-            <PhoneCall className="size-4" /> Emergency Directory
-          </span>
-        </Link>
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          <Link href="/resident/community/polls">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+              <Users className="size-4" /> Voting & Polls
+            </span>
+          </Link>
+          <Link href="/resident/emergency">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
+              <PhoneCall className="size-4" /> Emergency Directory
+            </span>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

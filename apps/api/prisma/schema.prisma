@@ -565,6 +565,11 @@ model Society {
   bankReconciliations     BankReconciliation[]
   paymentProviderConfigs  PaymentProviderConfig[]
   societyBankTransactions SocietyBankTransaction[]
+  assets                  Asset[]
+  inventoryItems          InventoryItem[]
+  inventoryMovements      InventoryMovement[]
+  polls                   Poll[]
+  pollBallots             PollBallot[]
 
   @@index([status])
   @@map("society")
@@ -631,6 +636,10 @@ model UserAccount {
   approvedExpenses           Expense[]                  @relation("ExpenseApprover")
   approvedBudgets            Budget[]                   @relation("BudgetApprover")
   societyBankTransactions    SocietyBankTransaction[]
+  uploadedAssetDocuments     AssetDocument[]            @relation("AssetDocumentUploader")
+  actedAssetStatusHistories  AssetStatusHistory[]       @relation("AssetStatusHistoryActor")
+  createdInventoryMovements  InventoryMovement[]        @relation("InventoryMovementCreator")
+  createdPolls               Poll[]                     @relation("PollCreator")
 
   @@index([societyId, status])
   @@map("user_account")
@@ -903,6 +912,7 @@ model Resident {
   residentRequests    ResidentRequest[]
   moveInRequests      MoveInRequest[]
   moveOutRequests     MoveOutRequest[]
+  pollBallots         PollBallot[]
 
   @@unique([societyId, residentNumber], name: "uk_resident_society_number")
   @@index([societyId, status, residentNumber])
@@ -1839,6 +1849,7 @@ model ServiceWorker {
   statusHistory       WorkerStatusHistory[]
   ticketAssignments   WorkerAssignment[]
   serviceRatings      ServiceRating[]
+  assignedAssets      Asset[]
 
   @@unique([societyId, workerNumber], name: "uk_worker_society_number")
   @@index([societyId, status, primaryCategoryId])
@@ -2175,6 +2186,7 @@ model MaintenanceRequest {
   archivedAt               DateTime?                  @map("archived_at") @db.Timestamptz(6)
   createdAt                DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  assetId                  String?                    @map("asset_id") @db.Uuid
   version                  Int                        @default(0)
   society                  Society                    @relation(fields: [societyId], references: [id], onDelete: Restrict)
   resident                 Resident                   @relation(fields: [residentId], references: [id], onDelete: Restrict)
@@ -2190,6 +2202,8 @@ model MaintenanceRequest {
   rating                   ServiceRating?
   escalations              EscalationRecord[]
   disclosures              ContactDisclosureLog[]
+  asset                    Asset?                     @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  inventoryMovements       InventoryMovement[]
 
   @@unique([societyId, ticketNumber], name: "uk_maintenance_society_ticket")
   @@index([societyId, status, priority, createdAt])
@@ -2973,6 +2987,7 @@ model Facility {
   society   Society            @relation(fields: [societyId], references: [id], onDelete: Restrict)
   bookings  FacilityBooking[]
   blockouts FacilityBlockout[]
+  assets    Asset[]
 
   @@index([societyId, status])
   @@map("facility")
@@ -3314,8 +3329,11 @@ model Vendor {
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   version       Int            @default(0)
 
-  society  Society   @relation(fields: [societyId], references: [id], onDelete: Restrict)
-  expenses Expense[]
+  society            Society             @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  expenses           Expense[]
+  assets             Asset[]
+  inventoryItems     InventoryItem[]
+  inventoryMovements InventoryMovement[]
 
   @@index([societyId, status])
   @@map("vendor")
@@ -3538,4 +3556,288 @@ model SocietyBankTransaction {
 
   @@index([societyId, bankAccountId, occurredAt])
   @@map("society_bank_transaction")
+}
+
+// =============================================
+// PHASE 7 — ASSET MANAGEMENT
+// =============================================
+
+enum AssetStatus {
+  ACTIVE
+  IN_MAINTENANCE
+  OUT_OF_SERVICE
+  RETIRED
+  DISPOSED
+}
+
+enum AssetCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  CRITICAL
+}
+
+enum AssetCategory {
+  GENERATOR
+  PUMP
+  LIFT_ELEVATOR
+  CCTV
+  GATE_BARRIER
+  FIRE_EXTINGUISHER
+  HVAC
+  ELECTRICAL
+  MAINTENANCE_TOOL
+  COMMUNITY_HALL
+  OTHER
+}
+
+model Asset {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId        String         @map("society_id") @db.Uuid
+  assetCode        String         @unique @map("asset_code") @db.VarChar(50)
+  name             String         @db.VarChar(160)
+  description      String?        @db.Text
+  category         AssetCategory
+  location         String?        @db.VarChar(300)
+  facilityId       String?        @map("facility_id") @db.Uuid
+  manufacturer     String?        @db.VarChar(160)
+  model            String?        @db.VarChar(160)
+  serialNumber     String?        @map("serial_number") @db.VarChar(160)
+  purchaseDate     DateTime?      @map("purchase_date") @db.Date
+  purchaseCost     Decimal?       @map("purchase_cost") @db.Decimal(14, 2)
+  currency         String?        @default("PKR") @db.Char(3)
+  warrantyExpiry   DateTime?      @map("warranty_expiry") @db.Date
+  status           AssetStatus    @default(ACTIVE)
+  condition        AssetCondition @default(GOOD)
+  vendorId         String?        @map("vendor_id") @db.Uuid
+  assignedWorkerId String?        @map("assigned_worker_id") @db.Uuid
+  notes            String?        @db.Text
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version          Int            @default(0)
+
+  society             Society              @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  facility            Facility?            @relation(fields: [facilityId], references: [id], onDelete: SetNull)
+  vendor              Vendor?              @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  assignedWorker      ServiceWorker?       @relation(fields: [assignedWorkerId], references: [id], onDelete: SetNull)
+  documents           AssetDocument[]
+  statusHistory       AssetStatusHistory[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@unique([societyId, assetCode], name: "uk_asset_society_code")
+  @@index([societyId, status])
+  @@index([societyId, category])
+  @@index([societyId, facilityId])
+  @@index([societyId, vendorId])
+  @@index([societyId, assignedWorkerId])
+  @@map("asset")
+}
+
+model AssetDocument {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assetId          String   @map("asset_id") @db.Uuid
+  objectKey        String   @unique @map("object_key") @db.VarChar(500)
+  originalName     String   @map("original_name") @db.VarChar(255)
+  mediaType        String   @map("media_type") @db.VarChar(120)
+  sizeBytes        BigInt   @map("size_bytes")
+  checksumSha256   String   @map("checksum_sha256") @db.Char(64)
+  category         String   @db.VarChar(80)
+  uploadedByUserId String   @map("uploaded_by_user_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  asset      Asset       @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  uploadedBy UserAccount @relation("AssetDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([assetId, category])
+  @@map("asset_document")
+}
+
+model AssetStatusHistory {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assetId       String       @map("asset_id") @db.Uuid
+  fromStatus    AssetStatus? @map("from_status")
+  toStatus      AssetStatus  @map("to_status")
+  reason        String?      @db.VarChar(500)
+  actedByUserId String       @map("acted_by_user_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  asset       Asset       @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  actedByUser UserAccount @relation("AssetStatusHistoryActor", fields: [actedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([assetId, createdAt])
+  @@map("asset_status_history")
+}
+
+// =============================================
+// PHASE 7 — INVENTORY / STORES
+// =============================================
+
+enum InventoryMovementType {
+  OPENING_BALANCE
+  RECEIPT
+  ISSUE
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  RETURN
+}
+
+model InventoryItem {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String   @map("society_id") @db.Uuid
+  sku             String   @db.VarChar(50)
+  name            String   @db.VarChar(160)
+  description     String?  @db.Text
+  category        String   @db.VarChar(80)
+  unitOfMeasure   String   @map("unit_of_measure") @db.VarChar(30)
+  minimumQuantity Decimal  @default(0) @map("minimum_quantity") @db.Decimal(14, 3)
+  reorderLevel    Decimal  @default(0) @map("reorder_level") @db.Decimal(14, 3)
+  currentQuantity Decimal  @default(0) @map("current_quantity") @db.Decimal(14, 3)
+  defaultVendorId String?  @map("default_vendor_id") @db.Uuid
+  unitCost        Decimal  @default(0) @map("unit_cost") @db.Decimal(14, 2)
+  currency        String   @default("PKR") @db.Char(3)
+  active          Boolean  @default(true)
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version         Int      @default(0)
+
+  society       Society             @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  defaultVendor Vendor?             @relation(fields: [defaultVendorId], references: [id], onDelete: SetNull)
+  movements     InventoryMovement[]
+
+  @@unique([societyId, sku], name: "uk_inventory_item_society_sku")
+  @@index([societyId, category])
+  @@index([societyId, active])
+  @@index([societyId, defaultVendorId])
+  @@map("inventory_item")
+}
+
+model InventoryMovement {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId            String                @map("society_id") @db.Uuid
+  inventoryItemId      String                @map("inventory_item_id") @db.Uuid
+  type                 InventoryMovementType
+  quantity             Decimal               @db.Decimal(14, 3)
+  unitCost             Decimal               @map("unit_cost") @db.Decimal(14, 2)
+  reference            String?               @db.VarChar(120)
+  vendorId             String?               @map("vendor_id") @db.Uuid
+  maintenanceRequestId String?               @map("maintenance_request_id") @db.Uuid
+  notes                String?               @db.Text
+  occurredAt           DateTime              @map("occurred_at") @db.Timestamptz(6)
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdByUserId      String                @map("created_by_user_id") @db.Uuid
+
+  society            Society             @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  inventoryItem      InventoryItem       @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  vendor             Vendor?             @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  maintenanceRequest MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id], onDelete: SetNull)
+  createdByUser      UserAccount         @relation("InventoryMovementCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([societyId, occurredAt])
+  @@index([inventoryItemId, occurredAt])
+  @@index([societyId, type])
+  @@index([maintenanceRequestId])
+  @@map("inventory_movement")
+}
+
+// =============================================
+// PHASE 7 — POLLS & VOTING
+// =============================================
+
+enum PollType {
+  GENERAL
+  SURVEY
+  AGM
+  RESOLUTION
+}
+
+enum PollStatus {
+  DRAFT
+  SCHEDULED
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum PollEligibility {
+  ALL_ACTIVE_RESIDENTS
+  OWNERS_ONLY
+  TENANTS_ONLY
+}
+
+model Poll {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId       String          @map("society_id") @db.Uuid
+  title           String          @db.VarChar(200)
+  description     String?         @db.Text
+  type            PollType
+  status          PollStatus      @default(DRAFT)
+  opensAt         DateTime        @map("opens_at") @db.Timestamptz(6)
+  closesAt        DateTime        @map("closes_at") @db.Timestamptz(6)
+  eligibility     PollEligibility @default(ALL_ACTIVE_RESIDENTS)
+  allowMultiple   Boolean         @default(false) @map("allow_multiple")
+  anonymous       Boolean         @default(true)
+  createdByUserId String          @map("created_by_user_id") @db.Uuid
+  publishedAt     DateTime?       @map("published_at") @db.Timestamptz(6)
+  closedAt        DateTime?       @map("closed_at") @db.Timestamptz(6)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version         Int             @default(0)
+
+  society       Society      @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  createdByUser UserAccount  @relation("PollCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  options       PollOption[]
+  ballots       PollBallot[]
+
+  @@index([societyId, status])
+  @@index([societyId, opensAt, closesAt])
+  @@index([createdByUserId])
+  @@map("poll")
+}
+
+model PollOption {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pollId    String   @map("poll_id") @db.Uuid
+  label     String   @db.VarChar(200)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  poll       Poll                  @relation(fields: [pollId], references: [id], onDelete: Restrict)
+  selections PollBallotSelection[]
+
+  @@index([pollId, sortOrder])
+  @@map("poll_option")
+}
+
+model PollBallot {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  societyId  String   @map("society_id") @db.Uuid
+  pollId     String   @map("poll_id") @db.Uuid
+  residentId String   @map("resident_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  society    Society               @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  poll       Poll                  @relation(fields: [pollId], references: [id], onDelete: Restrict)
+  resident   Resident              @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  selections PollBallotSelection[]
+
+  @@unique([pollId, residentId], name: "uk_poll_ballot_poll_resident")
+  @@index([societyId, pollId])
+  @@index([residentId])
+  @@map("poll_ballot")
+}
+
+model PollBallotSelection {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ballotId  String   @map("ballot_id") @db.Uuid
+  optionId  String   @map("option_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ballot PollBallot @relation(fields: [ballotId], references: [id], onDelete: Cascade)
+  option PollOption @relation(fields: [optionId], references: [id], onDelete: Restrict)
+
+  @@unique([ballotId, optionId], name: "uk_poll_ballot_selection_unique")
+  @@index([optionId])
+  @@map("poll_ballot_selection")
 }
