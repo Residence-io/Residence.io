@@ -117,3 +117,32 @@ export interface PropertyRecord {
     occupancies?: Array<{ residentId: string; occupancyType: string }>;
   }>;
 }
+
+export interface PropertyDetailRecord {
+  id: string;
+  societyId: string;
+  block: string;
+  street?: string;
+  propertyNumber: string;
+  type: string;
+  active: boolean;
+  units: Array<{
+    id: string;
+    unitNumber: string;
+    status: string;
+    occupancies: Array<{
+      id: string;
+      residentId: string;
+      occupancyType: string;
+      startDate: string;
+      endDate?: string | null;
+      moveOutReason?: string | null;
+      resident?: {
+        id: string;
+        residentNumber: string;
+        fullName: string;
+        status: string;
+      };
+    }>;
+  }>;
+}
