@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { ResidentStorageModule } from '../resident-storage/resident-storage.module';
 import { DuesController } from './dues.controller';
 import { FeePlansController } from './fee-plans.controller';
@@ -21,7 +22,7 @@ import { ReconciliationService } from './reconciliation/reconciliation.service';
 import { ReconciliationController } from './reconciliation/reconciliation.controller';
 
 @Module({
-  imports: [ResidentStorageModule],
+  imports: [ResidentStorageModule, AuditModule],
   controllers: [
     FeePlansController,
     DuesController,

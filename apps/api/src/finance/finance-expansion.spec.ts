@@ -11,6 +11,10 @@ import { AuditService } from '../audit/audit.service';
 import { PrivateStorageService } from '../resident-storage/private-storage.service';
 import { DevelopmentPaymentProvider } from './payment-provider';
 import { ReceiptService } from './receipt.service';
+import { FinanceModule } from './finance.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { ConfigurationModule } from '../configuration/configuration.module';
+import { SupabaseModule } from '../supabase/supabase.module';
 import {
   NotFoundException,
   BadRequestException,
@@ -579,6 +583,29 @@ describe('Phase 6 Financial Expansion Services - Final Lock', () => {
 
       expect(intent.providerReference).toContain('BT-2026-');
       expect(intent.instructions).toBeDefined();
+    });
+  });
+
+  describe('FinanceModule DI Wiring', () => {
+    it('compiles FinanceModule and successfully resolves all services with AuditService', async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [
+          PrismaModule,
+          ConfigurationModule,
+          SupabaseModule,
+          FinanceModule,
+        ],
+      })
+        .overrideProvider(PrismaService)
+        .useValue(mockPrisma)
+        .compile();
+
+      expect(moduleRef.get(VendorsService)).toBeDefined();
+      expect(moduleRef.get(ExpensesService)).toBeDefined();
+      expect(moduleRef.get(BudgetsService)).toBeDefined();
+      expect(moduleRef.get(BankingService)).toBeDefined();
+      expect(moduleRef.get(ReconciliationService)).toBeDefined();
+      expect(moduleRef.get(AuditService)).toBeDefined();
     });
   });
 });
